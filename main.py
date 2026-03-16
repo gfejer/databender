@@ -11,7 +11,7 @@ def parse_arguments():
     color_group = parser.add_argument_group('Color Manipulation')
     color_group.add_argument("-c", "--color-offset", type=int, required=False, default=0, help="Adds an integer value to all color channels (R, G, B) using wrap-around (modulo 256) arithmetic. (0-255)")
 
-    shift_group = parser.add_argument_group('Row Shifting (Glitch Effect)')
+    shift_group = parser.add_argument_group('Row Shifting')
     shift_group.add_argument("--do-shift", action="store_true", help="Enable row shifting with default values.")
     shift_group.add_argument("-p", "--probability", type=float, required=False, default=None, help="Probability of a row being shifted (0.0 - 1.0). (Default: 0.2)")
     shift_group.add_argument("-x", "--shift", type=int, default=None, help="Maximum horizontal shift in pixels (Default: 50)")
@@ -87,7 +87,6 @@ def sort_pixels(data, value: Callable, condition: Callable, rotation: int = 0):
             pixels[row, :, channel] = pixels[row, order.astype('uint32'), channel]
 
     return np.rot90(pixels, -rotation)
-
 
 def main():
     args = parse_arguments()
