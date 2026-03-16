@@ -24,6 +24,9 @@ def parse_arguments():
     sorting_group = parser.add_argument_group("Pixel Sorting")
     sorting_group.add_argument("--sort", action="store_true", help="Sort pixels based on luminosity.")
 
+    warp_group = parser.add_argument_group("Warping")
+    warp_group.add_argument("--warp", nargs=2, help="Warping mode (normal/sin) and intensity (for normal mode 1-20).", metavar=("MODE", "VAL"))
+
     parser.add_argument("-s", "--save", type=str, required=False, help="Input filename to save file.", metavar="FILENAME")
 
     args = parser.parse_args()
@@ -88,6 +91,19 @@ def sort_pixels(data, value: Callable, condition: Callable, rotation: int = 0):
 
     return np.rot90(pixels, -rotation)
 
+def warp(data, mode, val):
+    height = data.shape[0]
+    val = float(val)
+
+    for i in range(height):
+        if mode == "normal":
+            data[i] = np.roll(data[i], i/(21 - val), axis=0)
+        elif mode == "sin":
+            data[i] = np.roll(data[i], int(val * np.sin(i / 10.0)), axis=0)
+        else: 
+            continue
+    return data
+
 def main():
     args = parse_arguments()
 
@@ -107,6 +123,9 @@ def main():
         data = sort_pixels(data,
                 lambda pixels: np.average(pixels, axis=2) / 255,
                 lambda lum: (lum > 2 / 6) & (lum < 4 / 6), 1)
+    
+    if args.warp:
+        data = warp(data,args.warp[0], args.warp[1])
 
     # numpy array to image
     final_data = (data % 256).astype(np.uint8)
