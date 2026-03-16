@@ -1,9 +1,7 @@
 from PIL import Image
 import numpy as np
 import argparse
-import scipy
 from typing import Callable
-
 
 def parse_arguments():
     # flag arguments
