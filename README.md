@@ -13,3 +13,4 @@ pip install -r requirements.txt
 - Row Shifting
 - Chromatic Aberration
 - Pixel Sorting
+- Warping (normal / sin)
