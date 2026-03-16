@@ -2,6 +2,8 @@ from PIL import Image
 import numpy as np
 import argparse
 import scipy
+from typing import Callable
+
 
 def parse_arguments():
     # flag arguments
@@ -20,6 +22,9 @@ def parse_arguments():
     aberration_group.add_argument("-r", "--red", type=int, default=0, help=("Horizontal shift of the red channel.  (Default: 0)"))
     aberration_group.add_argument("-g", "--green", type=int, default=0, help=("Horizontal shift of the green channel. (Default: 0)"))
     aberration_group.add_argument("-b", "--blue", type=int, default=0, help=("Horizontal shift of the blue channel. (Default: 0)"))
+
+    sorting_group = parser.add_argument_group("Pixel Sorting")
+    sorting_group.add_argument("--sort", action="store_true", help="Sort pixels based on luminosity.")
 
     parser.add_argument("-s", "--save", type=str, required=False, help="Input filename to save file.", metavar="FILENAME")
 
@@ -66,6 +71,26 @@ def chromatic_aberration(data, red, green, blue):
 
     return data
 
+def sort_pixels(data, value: Callable, condition: Callable, rotation: int = 0):
+    # https://www.reddit.com/r/pixelsorting/comments/dewpt6/pixel_sorting_in_20_lines_of_python_using_numpy/
+    pixels = np.rot90(np.array(data), rotation)
+    values = value(pixels)
+    edges = np.apply_along_axis(lambda row: np.convolve(row, [-1, 1], 'same'), 0, condition(values))
+    intervals = [np.flatnonzero(row) for row in edges]
+
+    for row, key in enumerate(values):
+        order = np.split(key, intervals[row])
+        for index, interval in enumerate(order[1:]):
+            order[index + 1] = np.argsort(interval) + intervals[row][index]
+        order[0] = range(order[0].size)
+        order = np.concatenate(order)
+
+        for channel in range(3):
+            pixels[row, :, channel] = pixels[row, order.astype('uint32'), channel]
+
+    return np.rot90(pixels, -rotation)
+
+
 def main():
     args = parse_arguments()
 
@@ -79,7 +104,12 @@ def main():
     if args.do_shift:
         data = row_shifting(data, args.probability, args.shift)
     
-    data = chromatic_aberration(data, args.red, args.green, args.blue)
+    data = chromatic_aberration(data, args.red, args.green, args.blue)    
+
+    if args.sort:
+        data = sort_pixels(data,
+                lambda pixels: np.average(pixels, axis=2) / 255,
+                lambda lum: (lum > 2 / 6) & (lum < 4 / 6), 1)
 
     # numpy array to image
     final_data = (data % 256).astype(np.uint8)
