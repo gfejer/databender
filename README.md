@@ -1,5 +1,5 @@
 # Databender
-a Python script which lets you manipulate images in cool ways by converting the image to a numpy array and editing pixel data.
+a Python script that manipulates images by converting them into NumPy arrays and directly editing pixel data to create unique glitch art effects.
 
 ## Installation
 (Mac app available in releases)  
