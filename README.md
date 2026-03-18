@@ -2,7 +2,7 @@
 a Python script which lets you manipulate images in cool ways by converting the image to a numpy array and editing pixel data.
 
 ## Installation
-(Mac app available in releases)
+(Mac app available in releases)  
 Simply create a Python venv and install the required packages by running 
 
 ```bash
