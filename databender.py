@@ -65,7 +65,7 @@ class DatabendingApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Databender")
-        self.root.geometry("450x560")
+        self.root.geometry("450x600")
         self.root.resizable(False, False)
 
         self.image_path = None
