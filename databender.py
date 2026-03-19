@@ -5,7 +5,7 @@ import numpy as np
 from typing import Callable
 import os
 
-# --- ORIGINAL FUNCTIONS ---
+# ------------------------ ORIGINAL FUNCTIONS ------------------------
 
 def color_offset(data, offset):
     if offset == 0:
@@ -49,7 +49,7 @@ def sort_pixels(data, value: Callable, condition: Callable, rotation: int = 0):
     return np.rot90(pixels, -rotation)
 
 def hue(pixels):
-    r, g, b = np.split(pixels, 3, 2)
+    r, g, b = np.split(pixels[:, :, :3], 3, 2)
     return np.arctan2(np.sqrt(3) * (g - b), 2 * r - g - b)[:, :, 0]
 
 def warp(data, mode, val):
@@ -63,11 +63,11 @@ def warp(data, mode, val):
             data[i] = np.roll(data[i], int(val * np.sin(i / 10.0)), axis=0)
     return data
 
-# --- TKINTER GUI ---
+# ------------------------ TKINTER GUI ------------------------
 
 class DatabendingApp:
     def __init__(self, root):
-        version = "v1"
+        version = "v1.1"
         self.root = root
         self.root.title(f"databender-{version}")
         self.root.minsize(450, 600)
@@ -81,7 +81,7 @@ class DatabendingApp:
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # 1. Upload Image
+        # upload image
         file_frame = ttk.Frame(main_frame)
         file_frame.pack(fill=tk.X, pady=(0, 10))
         
@@ -91,7 +91,7 @@ class DatabendingApp:
         self.lbl_file = ttk.Label(file_frame, text="No image uploaded")
         self.lbl_file.pack(side=tk.LEFT, padx=10)
 
-        # 2. Color Manipulation
+        # color manipulation
         color_frame = ttk.LabelFrame(main_frame, text="Color Manipulation", padding="5")
         color_frame.pack(fill=tk.X, pady=5)
         
@@ -106,7 +106,7 @@ class DatabendingApp:
 
         ttk.Scale(color_frame, from_=0, to=255, variable=self.var_color_offset, orient=tk.HORIZONTAL, command=update_color_lbl).grid(row=0, column=1, sticky=tk.EW, padx=5)
 
-        # 3. Row Shifting
+        # row shifting
         shift_frame = ttk.LabelFrame(main_frame, text="Row Shifting", padding="5")
         shift_frame.pack(fill=tk.X, pady=5)
         
@@ -121,7 +121,7 @@ class DatabendingApp:
         self.var_shift = tk.IntVar(value=50)
         ttk.Entry(shift_frame, textvariable=self.var_shift, width=10).grid(row=2, column=1, sticky=tk.W)
 
-        # 4. Chromatic Aberration
+        # chromatic aberration
         aberration_frame = ttk.LabelFrame(main_frame, text="Chromatic Aberration", padding="5")
         aberration_frame.pack(fill=tk.X, pady=5)
         
@@ -137,7 +137,7 @@ class DatabendingApp:
         self.var_blue = tk.IntVar(value=0)
         ttk.Entry(aberration_frame, textvariable=self.var_blue, width=10).grid(row=2, column=1, sticky=tk.W)
 
-        # 5. Pixel Sorting
+        # pixel sorting
         sorting_frame = ttk.LabelFrame(main_frame, text="Pixel Sorting", padding="5")
         sorting_frame.pack(fill=tk.X, pady=5)
         
@@ -146,7 +146,7 @@ class DatabendingApp:
         sort_cb = ttk.Combobox(sorting_frame, textvariable=self.var_sort_mode, values=["none", "lum", "hue"], state="readonly", width=10)
         sort_cb.grid(row=0, column=1, sticky=tk.W)
         
-        # 6. Warping
+        # warping
         warp_frame = ttk.LabelFrame(main_frame, text="Warping", padding="5")
         warp_frame.pack(fill=tk.X, pady=5)
         
@@ -159,7 +159,7 @@ class DatabendingApp:
         self.var_warp_val = tk.DoubleVar(value=0.0)
         ttk.Entry(warp_frame, textvariable=self.var_warp_val, width=10).grid(row=1, column=1, sticky=tk.W)
 
-        # 7. Action Buttons
+        # action buttons
         action_frame = ttk.Frame(main_frame)
         action_frame.pack(fill=tk.X, pady=15)
 
@@ -185,22 +185,22 @@ class DatabendingApp:
             return
 
         try:
-            # Image to numpy array
+            # image to numpy array
             imgin = Image.open(self.image_path)
             imgin.load()
             data = np.asarray(imgin, dtype="int32")
 
-            # 1. Color Offset
+            # color offset
             data = color_offset(data, self.var_color_offset.get())
 
-            # 2. Row Shifting
+            # row shifting
             if self.var_do_shift.get():
                 data = row_shifting(data, self.var_probability.get(), self.var_shift.get())
             
-            # 3. Chromatic Aberration
+            # chromatic aberration
             data = chromatic_aberration(data, self.var_red.get(), self.var_green.get(), self.var_blue.get())    
 
-            # 4. Pixel Sorting
+            # pixel sorting
             sort_mode = self.var_sort_mode.get()
             if sort_mode == "lum":
                 data = sort_pixels(data,
@@ -210,16 +210,16 @@ class DatabendingApp:
             elif sort_mode == "hue":
                 data = sort_pixels(data, hue, lambda h: (h > 2 / 6) & (h < 4 / 6), 1)
             
-            # 5. Warping
+            # warping
             warp_mode = self.var_warp_mode.get()
             if warp_mode != "none":
                 data = warp(data, warp_mode, self.var_warp_val.get())
 
-            # Numpy array to image
+            # numpy array to image
             final_data = (data % 256).astype(np.uint8)
             imgout = Image.fromarray(final_data, "RGB")
 
-            # Handling results
+            # handling results
             if save:
                 save_path = filedialog.asksaveasfilename(
                     defaultextension=".png", 
