@@ -48,6 +48,10 @@ def sort_pixels(data, value: Callable, condition: Callable, rotation: int = 0):
 
     return np.rot90(pixels, -rotation)
 
+def hue(pixels):
+    r, g, b = np.split(pixels, 3, 2)
+    return np.arctan2(np.sqrt(3) * (g - b), 2 * r - g - b)[:, :, 0]
+
 def warp(data, mode, val):
     height = data.shape[0]
     val = float(val)
@@ -59,14 +63,15 @@ def warp(data, mode, val):
             data[i] = np.roll(data[i], int(val * np.sin(i / 10.0)), axis=0)
     return data
 
-# --- A TKINTER GUI ---
+# --- TKINTER GUI ---
 
 class DatabendingApp:
     def __init__(self, root):
+        version = "v1"
         self.root = root
-        self.root.title("Databender")
-        self.root.geometry("450x600")
-        self.root.resizable(False, False)
+        self.root.title(f"databender-{version}")
+        self.root.minsize(450, 600)
+        self.root.resizable(False, True)
 
         self.image_path = None
 
@@ -92,7 +97,14 @@ class DatabendingApp:
         
         ttk.Label(color_frame, text="Color Offset (0-255):").grid(row=0, column=0, sticky=tk.W)
         self.var_color_offset = tk.IntVar(value=0)
-        ttk.Scale(color_frame, from_=0, to=255, variable=self.var_color_offset, orient=tk.HORIZONTAL).grid(row=0, column=1, sticky=tk.EW, padx=5)
+
+        self.lbl_color_val = ttk.Label(color_frame, text="0")
+        self.lbl_color_val.grid(row=0, column=2, sticky=tk.W, padx=5)
+
+        def update_color_lbl(val):
+            self.lbl_color_val.config(text=str(int(float(val))))
+
+        ttk.Scale(color_frame, from_=0, to=255, variable=self.var_color_offset, orient=tk.HORIZONTAL, command=update_color_lbl).grid(row=0, column=1, sticky=tk.EW, padx=5)
 
         # 3. Row Shifting
         shift_frame = ttk.LabelFrame(main_frame, text="Row Shifting", padding="5")
@@ -129,9 +141,11 @@ class DatabendingApp:
         sorting_frame = ttk.LabelFrame(main_frame, text="Pixel Sorting", padding="5")
         sorting_frame.pack(fill=tk.X, pady=5)
         
-        self.var_sort = tk.BooleanVar(value=False)
-        ttk.Checkbutton(sorting_frame, text="Pixel sorting (based on luminosity)", variable=self.var_sort).grid(row=0, column=0, sticky=tk.W)
-
+        ttk.Label(sorting_frame, text="Mode:").grid(row=0, column=0, sticky=tk.W)
+        self.var_sort_mode =tk.StringVar(value="none")
+        sort_cb = ttk.Combobox(sorting_frame, textvariable=self.var_sort_mode, values=["none", "lum", "hue"], state="readonly", width=10)
+        sort_cb.grid(row=0, column=1, sticky=tk.W)
+        
         # 6. Warping
         warp_frame = ttk.LabelFrame(main_frame, text="Warping", padding="5")
         warp_frame.pack(fill=tk.X, pady=5)
@@ -187,15 +201,19 @@ class DatabendingApp:
             data = chromatic_aberration(data, self.var_red.get(), self.var_green.get(), self.var_blue.get())    
 
             # 4. Pixel Sorting
-            if self.var_sort.get():
+            sort_mode = self.var_sort_mode.get()
+            if sort_mode == "lum":
                 data = sort_pixels(data,
-                        lambda pixels: np.average(pixels, axis=2) / 255,
-                        lambda lum: (lum > 2 / 6) & (lum < 4 / 6), 1)
+                    lambda pixels: np.average(pixels, axis=2) / 255,
+                    lambda lum: (lum > 2 / 6) & (lum < 4 / 6), 1)
+            
+            elif sort_mode == "hue":
+                data = sort_pixels(data, hue, lambda h: (h > 2 / 6) & (h < 4 / 6), 1)
             
             # 5. Warping
-            mode = self.var_warp_mode.get()
-            if mode != "none":
-                data = warp(data, mode, self.var_warp_val.get())
+            warp_mode = self.var_warp_mode.get()
+            if warp_mode != "none":
+                data = warp(data, warp_mode, self.var_warp_val.get())
 
             # Numpy array to image
             final_data = (data % 256).astype(np.uint8)
