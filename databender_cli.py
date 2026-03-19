@@ -22,7 +22,7 @@ def parse_arguments():
     aberration_group.add_argument("-b", "--blue", type=int, default=0, help=("Horizontal shift of the blue channel. (Default: 0)"))
 
     sorting_group = parser.add_argument_group("Pixel Sorting")
-    sorting_group.add_argument("--sort", action="store_true", help="Sort pixels based on luminosity.")
+    sorting_group.add_argument("--sort", default=None, help="Sort pixels based on luminosity or hue (lum/hue).", metavar=("MODE"))
 
     warp_group = parser.add_argument_group("Warping")
     warp_group.add_argument("--warp", nargs=2, help="Warping mode (normal/sin) and intensity (for normal mode 1-20).", metavar=("MODE", "VAL"))
@@ -91,6 +91,10 @@ def sort_pixels(data, value: Callable, condition: Callable, rotation: int = 0):
 
     return np.rot90(pixels, -rotation)
 
+def hue(pixels):
+    r, g, b = np.split(pixels, 3, 2)
+    return np.arctan2(np.sqrt(3) * (g - b), 2 * r - g - b)[:, :, 0]
+
 def warp(data, mode, val):
     height = data.shape[0]
     val = float(val)
@@ -119,11 +123,14 @@ def main():
     
     data = chromatic_aberration(data, args.red, args.green, args.blue)    
 
-    if args.sort:
+    if args.sort == "lum":
         data = sort_pixels(data,
                 lambda pixels: np.average(pixels, axis=2) / 255,
                 lambda lum: (lum > 2 / 6) & (lum < 4 / 6), 1)
-    
+        
+    elif args.sort == "hue":
+        data = sort_pixels(data, hue, lambda h: (h > 2 / 6) & (h < 4 / 6), 1)
+
     if args.warp:
         data = warp(data,args.warp[0], args.warp[1])
 
