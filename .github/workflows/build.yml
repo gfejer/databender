@@ -1,9 +1,9 @@
 name: Build Cross-Platform Apps
+run-name: "Build by @${{ github.actor }} - ${{ github.event.head_commit.message }} (${{ github.event.head_commit.timestamp }})"
 
-on: [push]
+on: push
 
 jobs:
-
 # ARM MAC BUILD
   build-mac-arm:
     runs-on: macos-latest
@@ -107,5 +107,5 @@ jobs:
     - name: Upload Linux Artifact
       uses: actions/upload-artifact@v6
       with:
-        name: Databender-Linux
+        name: databender-linux
         path: dist/databender
