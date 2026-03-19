@@ -30,8 +30,6 @@ pip install -r requirements.txt
 python databender_cli.py
 ```
 
----
-
 ## Effects (for now)
 - **Color Manipulation**: Adds a fixed integer value to all color channels (Red, Green, Blue).
 - **Row Shifting**: Horizontally displaces rows of pixels by a random amount.
