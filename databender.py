@@ -78,9 +78,6 @@ class DatabendingApp:
         self.create_widgets()
 
     def create_widgets(self):
-        style = ttk.Style()
-        style.theme_use('aqua')
-
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
@@ -239,6 +236,5 @@ class DatabendingApp:
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.tk.call('tk', 'scaling', 2.0)
     app = DatabendingApp(root)
     root.mainloop()
