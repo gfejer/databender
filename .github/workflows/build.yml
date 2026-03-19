@@ -8,10 +8,10 @@ jobs:
   build-mac-arm:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
         python-version: '3.12'
 
@@ -22,12 +22,12 @@ jobs:
 
     - name: Build App
       run: |
-        python3 -m PyInstaller --noconsole --windowed --icon=icon.icns --name "databender_arm" databender.py
+        python3 -m PyInstaller --noconsole --windowed --icon=icon.icns databender.py
         cd dist
-        zip -r ../databender_mac_arm.zip databender_arm.app
+        zip -r ../databender_mac_arm.zip databender.app
 
     - name: Upload Mac Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: databender-mac-arm
         path: databender_mac_arm.zip
@@ -36,10 +36,10 @@ jobs:
   build-mac-intel:
     runs-on: macos-26-intel
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
         python-version: '3.12'
 
@@ -50,12 +50,12 @@ jobs:
 
     - name: Build App
       run: |
-        python3 -m PyInstaller --noconsole --windowed --icon=icon.icns --name "databender_intel" databender.py
+        python3 -m PyInstaller --noconsole --windowed --icon=icon.icns databender.py
         cd dist
-        zip -r ../databender_mac_intel.zip databender_intel.app
+        zip -r ../databender_mac_intel.zip databender.app
 
     - name: Upload Mac Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6
       with:
         name: databender-mac-intel
         path: databender_mac_intel.zip
@@ -64,10 +64,10 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v6
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v6
       with:
         python-version: '3.12'
 
@@ -77,10 +77,35 @@ jobs:
         pip install pillow numpy pyinstaller
 
     - name: Build EXE
-      run: pyinstaller --noconsole --windowed --onefile --icon=icon.ico --name "databender_win" databender.py
+      run: pyinstaller --noconsole --windowed --onefile --icon=icon.ico databender.py
 
     - name: Upload Windows Artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v6  
       with:
         name: databender-win
         path: dist/*.exe
+
+  # LINUX BUILD
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install pillow numpy pyinstaller
+
+    - name: Build Linux
+      run: pyinstaller --noconsole --onefile databender.py
+
+    - name: Upload Linux Artifact
+      uses: actions/upload-artifact@v6
+      with:
+        name: Databender-Linux
+        path: dist/databender
