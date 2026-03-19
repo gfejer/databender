@@ -2,8 +2,8 @@
 a Python script that manipulates images by converting them into NumPy arrays and directly editing pixel data to create unique glitch art effects.
 
 ## Installation
-(Mac app available in releases)  
-Simply create a Python venv and install the required packages by running 
+Mac, Windows and Linux apps available in releases.  
+For the cli version: simply create a Python venv and install the required packages by running 
 
 ```bash
 pip install -r requirements.txt
