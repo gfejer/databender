@@ -1,7 +1,16 @@
 name: Build Cross-Platform Apps
 run-name: "Build by @${{ github.actor }} - ${{ github.event.head_commit.message }} (${{ github.event.head_commit.timestamp }})"
 
-on: push
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - "**.py"
+      - "**.ico"
+      - "**.icns"
+      - ".github/workflows/build.yml"
+    
+  workflow_dispatch: 
 
 jobs:
 # ARM MAC BUILD
