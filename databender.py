@@ -70,8 +70,8 @@ class DatabendingApp:
         version = "v1.1"
         self.root = root
         self.root.title(f"databender-{version}")
-        self.root.minsize(450, 770)
-        self.root.geometry("450x770")
+        self.root.minsize(550, 650)
+        self.root.geometry("550x650")
         self.root.resizable(True, True)
 
         self.image_path = None
@@ -109,6 +109,9 @@ class DatabendingApp:
         roi_frame = ttk.LabelFrame(main_frame, text="Region of Interest (Area Mask)", padding="5")
         roi_frame.pack(fill=tk.X, pady=5)
 
+        roi_frame.columnconfigure(1, weight=1)
+        roi_frame.columnconfigure(4, weight=1)
+
         self.var_roi_enable = tk.BooleanVar(value=False)
         ttk.Checkbutton(roi_frame, text="Enable Area Mask", variable=self.var_roi_enable).grid(row=0, column=0, columnspan=4, sticky=tk.W, pady=(0, 5))
 
@@ -132,11 +135,13 @@ class DatabendingApp:
         ttk.Label(roi_frame, text="Height:").grid(row=2, column=3, sticky=tk.E, padx=(10, 2), pady=2)
         self.var_roi_h = tk.StringVar(value="200")
         ttk.Entry(roi_frame, textvariable=self.var_roi_h, width=5).grid(row=2, column=4, sticky=tk.W, pady=2)
-        
+
         # color manipulation
         color_frame = ttk.LabelFrame(main_frame, text="Color Manipulation", padding="5")
         color_frame.pack(fill=tk.X, pady=5)
         
+        color_frame.columnconfigure(1, weight=1)
+
         ttk.Label(color_frame, text="Color Offset (0-255):").grid(row=0, column=0, sticky=tk.W)
         self.var_color_offset = tk.IntVar(value=0)
 
@@ -148,58 +153,64 @@ class DatabendingApp:
 
         ttk.Scale(color_frame, from_=0, to=255, variable=self.var_color_offset, orient=tk.HORIZONTAL, command=update_color_lbl).grid(row=0, column=1, sticky=tk.EW, padx=5)
 
+        row1_frame = ttk.Frame(main_frame)
+        row1_frame.pack(fill=tk.X, pady=5)
+
         # row shifting
-        shift_frame = ttk.LabelFrame(main_frame, text="Row Shifting", padding="5")
-        shift_frame.pack(fill=tk.X, pady=5)
+        shift_frame = ttk.LabelFrame(row1_frame, text="Row Shifting", padding="5")
+        shift_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
         
         self.var_do_shift = tk.BooleanVar(value=False)
         ttk.Checkbutton(shift_frame, text="Enable", variable=self.var_do_shift).grid(row=0, column=0, columnspan=2, sticky=tk.W)
         
         ttk.Label(shift_frame, text="Probability (0.0-1.0):").grid(row=1, column=0, sticky=tk.W)
         self.var_probability = tk.DoubleVar(value=0.2)
-        ttk.Entry(shift_frame, textvariable=self.var_probability, width=10).grid(row=1, column=1, sticky=tk.W)
+        ttk.Entry(shift_frame, textvariable=self.var_probability, width=5).grid(row=1, column=1, sticky=tk.W)
         
         ttk.Label(shift_frame, text="Max Shift (px):").grid(row=2, column=0, sticky=tk.W)
         self.var_shift = tk.IntVar(value=50)
-        ttk.Entry(shift_frame, textvariable=self.var_shift, width=10).grid(row=2, column=1, sticky=tk.W)
+        ttk.Entry(shift_frame, textvariable=self.var_shift, width=5).grid(row=2, column=1, sticky=tk.W)
 
         # chromatic aberration
-        aberration_frame = ttk.LabelFrame(main_frame, text="Chromatic Aberration", padding="5")
-        aberration_frame.pack(fill=tk.X, pady=5)
+        aberration_frame = ttk.LabelFrame(row1_frame, text="Chromatic Aberration", padding="5")
+        aberration_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0))
         
         ttk.Label(aberration_frame, text="Red Shift:").grid(row=0, column=0, sticky=tk.W)
         self.var_red = tk.IntVar(value=0)
-        ttk.Entry(aberration_frame, textvariable=self.var_red, width=10).grid(row=0, column=1, sticky=tk.W)
+        ttk.Entry(aberration_frame, textvariable=self.var_red, width=5).grid(row=0, column=1, sticky=tk.W)
         
         ttk.Label(aberration_frame, text="Green Shift:").grid(row=1, column=0, sticky=tk.W)
         self.var_green = tk.IntVar(value=0)
-        ttk.Entry(aberration_frame, textvariable=self.var_green, width=10).grid(row=1, column=1, sticky=tk.W)
+        ttk.Entry(aberration_frame, textvariable=self.var_green, width=5).grid(row=1, column=1, sticky=tk.W)
         
         ttk.Label(aberration_frame, text="Blue Shift:").grid(row=2, column=0, sticky=tk.W)
         self.var_blue = tk.IntVar(value=0)
-        ttk.Entry(aberration_frame, textvariable=self.var_blue, width=10).grid(row=2, column=1, sticky=tk.W)
+        ttk.Entry(aberration_frame, textvariable=self.var_blue, width=5).grid(row=2, column=1, sticky=tk.W)
 
-        # pixel sorting
-        sorting_frame = ttk.LabelFrame(main_frame, text="Pixel Sorting", padding="5")
-        sorting_frame.pack(fill=tk.X, pady=5)
-        
-        ttk.Label(sorting_frame, text="Mode:").grid(row=0, column=0, sticky=tk.W)
-        self.var_sort_mode =tk.StringVar(value="none")
-        sort_cb = ttk.Combobox(sorting_frame, textvariable=self.var_sort_mode, values=["none", "lum", "hue"], state="readonly", width=10)
-        sort_cb.grid(row=0, column=1, sticky=tk.W)
-        
+        row2_frame = ttk.Frame(main_frame)
+        row2_frame.pack(fill=tk.X, pady=5)
+
         # warping
-        warp_frame = ttk.LabelFrame(main_frame, text="Warping", padding="5")
-        warp_frame.pack(fill=tk.X, pady=5)
+        warp_frame = ttk.LabelFrame(row2_frame, text="Warping", padding="5")
+        warp_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
         
         ttk.Label(warp_frame, text="Mode:").grid(row=0, column=0, sticky=tk.W)
         self.var_warp_mode = tk.StringVar(value="none")
-        warp_cb = ttk.Combobox(warp_frame, textvariable=self.var_warp_mode, values=["none", "normal", "sin"], state="readonly", width=10)
+        warp_cb = ttk.Combobox(warp_frame, textvariable=self.var_warp_mode, values=["none", "normal", "sin"], state="readonly", width=5)
         warp_cb.grid(row=0, column=1, sticky=tk.W)
         
         ttk.Label(warp_frame, text="Intensity:").grid(row=1, column=0, sticky=tk.W)
         self.var_warp_val = tk.DoubleVar(value=0.0)
-        ttk.Entry(warp_frame, textvariable=self.var_warp_val, width=10).grid(row=1, column=1, sticky=tk.W)
+        ttk.Entry(warp_frame, textvariable=self.var_warp_val, width=5).grid(row=1, column=1, sticky=tk.W)
+
+        # pixel sorting
+        sorting_frame = ttk.LabelFrame(row2_frame, text="Pixel Sorting", padding="5")
+        sorting_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0))
+        
+        ttk.Label(sorting_frame, text="Mode:").grid(row=0, column=0, sticky=tk.W)
+        self.var_sort_mode =tk.StringVar(value="none")
+        sort_cb = ttk.Combobox(sorting_frame, textvariable=self.var_sort_mode, values=["none", "lum", "hue"], state="readonly", width=5)
+        sort_cb.grid(row=0, column=1, sticky=tk.W)
 
         # action buttons
         action_frame = ttk.Frame(main_frame)
