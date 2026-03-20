@@ -22,11 +22,11 @@ def row_shifting(data, probability, max_shift):
     return data
 
 def chromatic_aberration(data, red, green, blue):
-    if red > 0:
+    if red != 0:
         data[:,:,0] = np.roll(data[:,:,0], red, axis=1)
-    if green > 0:
+    if green != 0:
         data[:,:,1] = np.roll(data[:,:,1], green, axis=1)
-    if blue > 0:
+    if blue != 0:
         data[:,:,2] = np.roll(data[:,:,2], blue, axis=1)
     return data
 
