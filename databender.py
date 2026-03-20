@@ -70,8 +70,8 @@ class DatabendingApp:
         version = "v1.1"
         self.root = root
         self.root.title(f"databender-{version}")
-        self.root.minsize(450, 700)
-        self.root.resizable(False, True)
+        self.root.minsize(450, 770)
+        self.root.resizable(True, True)
 
         self.image_path = None
 
