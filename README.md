@@ -8,14 +8,16 @@ a Python script that manipulates images by converting them into NumPy arrays and
 2. Download the version for your OS (Windows, Mac (Intel/ARM), or Linux).
 3. Run the executable.
 
-**⚠️ Note for Mac Users:**  
+> [!IMPORTANT]
+> **Note for Mac Users:**  
 macOS might flag this application as an unrecognized or dangerous file. To open the app safely, follow these steps:
-1. Open **System Settings**.
-2. Go to **Privacy & Security**.
-3. Scroll down to the security section, locate the app (databender), and click **Open Anyway**.
+> 1. Open **System Settings**.
+> 2. Go to **Privacy & Security**.
+> 3. Scroll down to the security section, locate the app (**databender**), and click **Open Anyway**.
 
-**⚠️ Note for Windows Users:**  
-Because this application is packaged using PyInstaller into a single executable, some antivirus software (like Windows Defender) might falsely flag it as a virus. This is a known "false positive" issue with Python packaging tools. You can safely tell your antivirus to allow the file, or inspect the open-source code and run it via Python directly!
+> [!IMPORTANT]
+> **Note for Windows Users:**  
+Because this application is packaged using PyInstaller into a single executable, some antivirus software (like Windows Defender) might falsely flag it as a virus. This is a known **"false positive"** issue with Python packaging tools. You can safely tell your antivirus to allow the file, or inspect the open-source code and run it via Python directly!
 
 ### CLI Script
 If you want to run the script manually:
