@@ -112,8 +112,15 @@ class DatabendingApp:
         roi_frame.columnconfigure(1, weight=1)
         roi_frame.columnconfigure(4, weight=1)
 
+        """
         self.var_roi_enable = tk.BooleanVar(value=False)
         ttk.Checkbutton(roi_frame, text="Enable Area Mask", variable=self.var_roi_enable).grid(row=0, column=0, columnspan=4, sticky=tk.W, pady=(0, 5))
+        """
+
+        ttk.Label(roi_frame, text="Mode:").grid(row=0, column=0, sticky=tk.E, padx=2)
+        self.var_roi_mode = tk.StringVar(value="none")
+        roi_cb = ttk.Combobox(roi_frame, textvariable=self.var_roi_mode, values=["none", "inside", "outside"], state="readonly", width=5)
+        roi_cb.grid(row=0, column=1, sticky=tk.W)
 
         # coordinate sliders/fields
         ttk.Label(roi_frame, text="X Pos:").grid(row=1, column=0, sticky=tk.E, padx=2)
@@ -261,8 +268,27 @@ class DatabendingApp:
             
             img_h, img_w = data.shape[:2]
 
-            # ROI cut
-            if self.var_roi_enable.get():
+            # --- ROI KIVÁGÁSA ---
+            roi_mode = self.var_roi_mode.get()
+            if roi_mode == "outside":
+                try:
+                    rx = self.var_roi_x.get()
+                    ry = self.var_roi_y.get()
+
+                    rw = int(self.var_roi_w.get()) if self.var_roi_w.get() else img_w
+                    rh = int(self.var_roi_h.get()) if self.var_roi_h.get() else img_h
+
+                    rw = max(1, min(rw, img_w - rx))
+                    rh = max(1, min(rh, img_h - ry))
+
+                    original_roi = data[ry:ry+rh, rx:rx+rw].copy()
+                    target_data = data.copy()
+
+                except ValueError:
+                    messagebox.showerror("Error", "ROI coordinates must be whole numbers!")
+                    return
+                
+            elif roi_mode == "inside":
                 try:
                     rx = self.var_roi_x.get()
                     ry = self.var_roi_y.get()
@@ -278,9 +304,13 @@ class DatabendingApp:
                 except ValueError:
                     messagebox.showerror("Error", "ROI coordinates must be whole numbers!")
                     return
+    
+                except ValueError:
+                    messagebox.showerror("Error", "ROI coordinates must be whole numbers!")
+                    return
             else:
-                target_data = data
-            
+                target_data = data.copy()
+
             # color offset
             target_data = color_offset(target_data, self.var_color_offset.get())
 
@@ -307,8 +337,14 @@ class DatabendingApp:
                 target_data = warp(target_data, warp_mode, self.var_warp_val.get())
 
             # --- placing the ROI back on the image ---
-            if self.var_roi_enable.get():
+            roi_mode = self.var_roi_mode.get()
+            if roi_mode == "inside":
                 data[ry:ry+rh, rx:rx+rw] = target_data
+
+            elif roi_mode == "outside":
+                target_data[ry:ry+rh, rx:rx+rw] = original_roi
+                data = target_data
+            
             else:
                 data = target_data
 
