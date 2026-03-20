@@ -67,7 +67,7 @@ def warp(data, mode, val):
 
 class DatabendingApp:
     def __init__(self, root):
-        version = "v1.2"
+        version = "v1.2.1"
         self.root = root
         self.root.title(f"databender-{version}")
         self.root.minsize(550, 650)
@@ -119,7 +119,7 @@ class DatabendingApp:
 
         ttk.Label(roi_frame, text="Mode:").grid(row=0, column=0, sticky=tk.E, padx=2)
         self.var_roi_mode = tk.StringVar(value="none")
-        roi_cb = ttk.Combobox(roi_frame, textvariable=self.var_roi_mode, values=["none", "inside", "outside"], state="readonly", width=5)
+        roi_cb = ttk.Combobox(roi_frame, textvariable=self.var_roi_mode, values=["none", "inside", "outside"], state="readonly", width=8)
         roi_cb.grid(row=0, column=1, sticky=tk.W)
 
         # coordinate sliders/fields
@@ -151,14 +151,9 @@ class DatabendingApp:
 
         ttk.Label(color_frame, text="Color Offset (0-255):").grid(row=0, column=0, sticky=tk.W)
         self.var_color_offset = tk.IntVar(value=0)
-
-        self.lbl_color_val = ttk.Label(color_frame, text="0")
-        self.lbl_color_val.grid(row=0, column=2, sticky=tk.W, padx=5)
-
-        def update_color_lbl(val):
-            self.lbl_color_val.config(text=str(int(float(val))))
-
-        ttk.Scale(color_frame, from_=0, to=255, variable=self.var_color_offset, orient=tk.HORIZONTAL, command=update_color_lbl).grid(row=0, column=1, sticky=tk.EW, padx=5)
+            
+        ttk.Scale(color_frame, from_=0, to=255, variable=self.var_color_offset, orient=tk.HORIZONTAL, command=lambda v: self.var_color_offset.set(int(float(v)))).grid(row=0, column=1, sticky=tk.EW, padx=5)
+        ttk.Entry(color_frame, textvariable=self.var_color_offset, width=8).grid(row=0, column=2, sticky=tk.W, padx=5)
 
         row1_frame = ttk.Frame(main_frame)
         row1_frame.pack(fill=tk.X, pady=5)
@@ -203,7 +198,7 @@ class DatabendingApp:
         
         ttk.Label(warp_frame, text="Mode:").grid(row=0, column=0, sticky=tk.W)
         self.var_warp_mode = tk.StringVar(value="none")
-        warp_cb = ttk.Combobox(warp_frame, textvariable=self.var_warp_mode, values=["none", "normal", "sin"], state="readonly", width=5)
+        warp_cb = ttk.Combobox(warp_frame, textvariable=self.var_warp_mode, values=["none", "normal", "sin"], state="readonly", width=8)
         warp_cb.grid(row=0, column=1, sticky=tk.W)
         
         ttk.Label(warp_frame, text="Intensity:").grid(row=1, column=0, sticky=tk.W)
@@ -216,7 +211,7 @@ class DatabendingApp:
         
         ttk.Label(sorting_frame, text="Mode:").grid(row=0, column=0, sticky=tk.W)
         self.var_sort_mode =tk.StringVar(value="none")
-        sort_cb = ttk.Combobox(sorting_frame, textvariable=self.var_sort_mode, values=["none", "lum", "hue"], state="readonly", width=5)
+        sort_cb = ttk.Combobox(sorting_frame, textvariable=self.var_sort_mode, values=["none", "lum", "hue"], state="readonly", width=8)
         sort_cb.grid(row=0, column=1, sticky=tk.W)
 
         # action buttons
