@@ -5,7 +5,7 @@ import numpy as np
 from typing import Callable
 import os
 
-# ------------------------ ORIGINAL FUNCTIONS ------------------------
+# -------------------------------- ORIGINAL FUNCTIONS --------------------------------
 
 def color_offset(data, offset):
     if offset == 0:
@@ -63,14 +63,14 @@ def warp(data, mode, val):
             data[i] = np.roll(data[i], int(val * np.sin(i / 10.0)), axis=0)
     return data
 
-# ------------------------ TKINTER GUI ------------------------
+# -------------------------------- TKINTER GUI --------------------------------
 
 class DatabendingApp:
     def __init__(self, root):
         version = "v1.1"
         self.root = root
         self.root.title(f"databender-{version}")
-        self.root.minsize(450, 600)
+        self.root.minsize(450, 700)
         self.root.resizable(False, True)
 
         self.image_path = None
@@ -91,6 +91,47 @@ class DatabendingApp:
         self.lbl_file = ttk.Label(file_frame, text="No image uploaded")
         self.lbl_file.pack(side=tk.LEFT, padx=10)
 
+        #info
+        info_frame = ttk.LabelFrame(main_frame, text="Image Info", padding="5")
+        info_frame.pack(fill=tk.X, pady=(0, 10))
+
+        self.var_info_x = tk.StringVar(value="X: ")
+        self.var_info_y = tk.StringVar(value="Y: ")
+
+        self.lbl_info_x = ttk.Label(info_frame, textvariable=self.var_info_x)
+        self.lbl_info_x.pack(side=tk.LEFT, padx=(5, 20))
+
+        self.lbl_info_y = ttk.Label(info_frame, textvariable=self.var_info_y)
+        self.lbl_info_y.pack(side=tk.LEFT, padx=5)
+
+        # region of interest (ROI)
+        roi_frame = ttk.LabelFrame(main_frame, text="Region of Interest (Area Mask)", padding="5")
+        roi_frame.pack(fill=tk.X, pady=5)
+
+        self.var_roi_enable = tk.BooleanVar(value=False)
+        ttk.Checkbutton(roi_frame, text="Enable Area Mask", variable=self.var_roi_enable).grid(row=0, column=0, columnspan=4, sticky=tk.W, pady=(0, 5))
+
+        # coordinate sliders/fields
+        ttk.Label(roi_frame, text="X Pos:").grid(row=1, column=0, sticky=tk.E, padx=2)
+        self.var_roi_x = tk.IntVar(value=0)
+        self.slider_roi_x = ttk.Scale(roi_frame, from_=0, to=100, variable=self.var_roi_x, orient=tk.HORIZONTAL, command=lambda v: self.var_roi_x.set(int(float(v))))
+        self.slider_roi_x.grid(row=1, column=1, sticky=tk.EW, padx=5)
+        ttk.Entry(roi_frame, textvariable=self.var_roi_x, width=5).grid(row=1, column=2, sticky=tk.W)
+
+        ttk.Label(roi_frame, text="Y Pos:").grid(row=1, column=3, sticky=tk.E, padx=5)
+        self.var_roi_y = tk.IntVar(value=0)
+        self.slider_roi_y = ttk.Scale(roi_frame, from_=0, to=100, variable=self.var_roi_y, orient=tk.HORIZONTAL, command=lambda v: self.var_roi_y.set(int(float(v))))
+        self.slider_roi_y.grid(row=1, column=4, sticky=tk.EW, padx=5)
+        ttk.Entry(roi_frame, textvariable=self.var_roi_y, width=5).grid(row=1, column=5, sticky=tk.W)
+
+        ttk.Label(roi_frame, text="Width:").grid(row=2, column=0, sticky=tk.E, padx=2, pady=2)
+        self.var_roi_w = tk.StringVar(value="200")
+        ttk.Entry(roi_frame, textvariable=self.var_roi_w, width=5).grid(row=2, column=1, sticky=tk.W, pady=2)
+
+        ttk.Label(roi_frame, text="Height:").grid(row=2, column=3, sticky=tk.E, padx=(10, 2), pady=2)
+        self.var_roi_h = tk.StringVar(value="200")
+        ttk.Entry(roi_frame, textvariable=self.var_roi_h, width=5).grid(row=2, column=4, sticky=tk.W, pady=2)
+        
         # color manipulation
         color_frame = ttk.LabelFrame(main_frame, text="Color Manipulation", padding="5")
         color_frame.pack(fill=tk.X, pady=5)
@@ -178,6 +219,22 @@ class DatabendingApp:
         if filepath:
             self.image_path = filepath
             self.lbl_file.config(text=os.path.basename(filepath))
+        
+            try:
+                    with Image.open(filepath) as img:
+                        w, h = img.size
+                    
+                    self.var_info_x.set(f"X: {w}")
+                    self.var_info_y.set(f"Y: {h}")
+
+                    self.slider_roi_x.config(to=w-1)
+                    self.slider_roi_y.config(to=h-1)
+
+                    self.var_roi_x.set(0)
+                    self.var_roi_y.set(0)
+                    
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to read image dimensions:\n{str(e)}")
 
     def process(self, save=False):
         if not self.image_path:
@@ -189,31 +246,59 @@ class DatabendingApp:
             imgin = Image.open(self.image_path)
             imgin.load()
             data = np.asarray(imgin, dtype="int32")
+            
+            img_h, img_w = data.shape[:2]
 
+            # ROI cut
+            if self.var_roi_enable.get():
+                try:
+                    rx = self.var_roi_x.get()
+                    ry = self.var_roi_y.get()
+
+                    rw = int(self.var_roi_w.get()) if self.var_roi_w.get() else img_w
+                    rh = int(self.var_roi_h.get()) if self.var_roi_h.get() else img_h
+
+                    rw = max(1, min(rw, img_w - rx))
+                    rh = max(1, min(rh, img_h - ry))
+
+                    target_data = data[ry:ry+rh, rx:rx+rw].copy()
+
+                except ValueError:
+                    messagebox.showerror("Error", "ROI coordinates must be whole numbers!")
+                    return
+            else:
+                target_data = data
+            
             # color offset
-            data = color_offset(data, self.var_color_offset.get())
+            target_data = color_offset(target_data, self.var_color_offset.get())
 
             # row shifting
             if self.var_do_shift.get():
-                data = row_shifting(data, self.var_probability.get(), self.var_shift.get())
+                target_data = row_shifting(target_data, self.var_probability.get(), self.var_shift.get())
             
             # chromatic aberration
-            data = chromatic_aberration(data, self.var_red.get(), self.var_green.get(), self.var_blue.get())    
+            target_data = chromatic_aberration(target_data, self.var_red.get(), self.var_green.get(), self.var_blue.get())    
 
             # pixel sorting
             sort_mode = self.var_sort_mode.get()
             if sort_mode == "lum":
-                data = sort_pixels(data,
+                target_data = sort_pixels(target_data,
                     lambda pixels: np.average(pixels, axis=2) / 255,
                     lambda lum: (lum > 2 / 6) & (lum < 4 / 6), 1)
             
             elif sort_mode == "hue":
-                data = sort_pixels(data, hue, lambda h: (h > 2 / 6) & (h < 4 / 6), 1)
+                target_data = sort_pixels(target_data, hue, lambda h: (h > 2 / 6) & (h < 4 / 6), 1)
             
             # warping
             warp_mode = self.var_warp_mode.get()
             if warp_mode != "none":
-                data = warp(data, warp_mode, self.var_warp_val.get())
+                target_data = warp(target_data, warp_mode, self.var_warp_val.get())
+
+            # --- placing the ROI back on the image ---
+            if self.var_roi_enable.get():
+                data[ry:ry+rh, rx:rx+rw] = target_data
+            else:
+                data = target_data
 
             # numpy array to image
             final_data = (data % 256).astype(np.uint8)
