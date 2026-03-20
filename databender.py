@@ -67,7 +67,7 @@ def warp(data, mode, val):
 
 class DatabendingApp:
     def __init__(self, root):
-        version = "v1.1"
+        version = "v1.2"
         self.root = root
         self.root.title(f"databender-{version}")
         self.root.minsize(550, 650)
@@ -120,21 +120,21 @@ class DatabendingApp:
         self.var_roi_x = tk.IntVar(value=0)
         self.slider_roi_x = ttk.Scale(roi_frame, from_=0, to=100, variable=self.var_roi_x, orient=tk.HORIZONTAL, command=lambda v: self.var_roi_x.set(int(float(v))))
         self.slider_roi_x.grid(row=1, column=1, sticky=tk.EW, padx=5)
-        ttk.Entry(roi_frame, textvariable=self.var_roi_x, width=5).grid(row=1, column=2, sticky=tk.W)
+        ttk.Entry(roi_frame, textvariable=self.var_roi_x, width=8).grid(row=1, column=2, sticky=tk.W)
 
         ttk.Label(roi_frame, text="Y Pos:").grid(row=1, column=3, sticky=tk.E, padx=5)
         self.var_roi_y = tk.IntVar(value=0)
         self.slider_roi_y = ttk.Scale(roi_frame, from_=0, to=100, variable=self.var_roi_y, orient=tk.HORIZONTAL, command=lambda v: self.var_roi_y.set(int(float(v))))
         self.slider_roi_y.grid(row=1, column=4, sticky=tk.EW, padx=5)
-        ttk.Entry(roi_frame, textvariable=self.var_roi_y, width=5).grid(row=1, column=5, sticky=tk.W)
+        ttk.Entry(roi_frame, textvariable=self.var_roi_y, width=8).grid(row=1, column=5, sticky=tk.W)
 
         ttk.Label(roi_frame, text="Width:").grid(row=2, column=0, sticky=tk.E, padx=2, pady=2)
         self.var_roi_w = tk.StringVar(value="200")
-        ttk.Entry(roi_frame, textvariable=self.var_roi_w, width=5).grid(row=2, column=1, sticky=tk.W, pady=2)
+        ttk.Entry(roi_frame, textvariable=self.var_roi_w, width=8).grid(row=2, column=1, sticky=tk.W, pady=2)
 
         ttk.Label(roi_frame, text="Height:").grid(row=2, column=3, sticky=tk.E, padx=(10, 2), pady=2)
         self.var_roi_h = tk.StringVar(value="200")
-        ttk.Entry(roi_frame, textvariable=self.var_roi_h, width=5).grid(row=2, column=4, sticky=tk.W, pady=2)
+        ttk.Entry(roi_frame, textvariable=self.var_roi_h, width=8).grid(row=2, column=4, sticky=tk.W, pady=2)
 
         # color manipulation
         color_frame = ttk.LabelFrame(main_frame, text="Color Manipulation", padding="5")
@@ -165,11 +165,11 @@ class DatabendingApp:
         
         ttk.Label(shift_frame, text="Probability (0.0-1.0):").grid(row=1, column=0, sticky=tk.W)
         self.var_probability = tk.DoubleVar(value=0.2)
-        ttk.Entry(shift_frame, textvariable=self.var_probability, width=5).grid(row=1, column=1, sticky=tk.W)
+        ttk.Entry(shift_frame, textvariable=self.var_probability, width=8).grid(row=1, column=1, sticky=tk.W)
         
         ttk.Label(shift_frame, text="Max Shift (px):").grid(row=2, column=0, sticky=tk.W)
         self.var_shift = tk.IntVar(value=50)
-        ttk.Entry(shift_frame, textvariable=self.var_shift, width=5).grid(row=2, column=1, sticky=tk.W)
+        ttk.Entry(shift_frame, textvariable=self.var_shift, width=8).grid(row=2, column=1, sticky=tk.W)
 
         # chromatic aberration
         aberration_frame = ttk.LabelFrame(row1_frame, text="Chromatic Aberration", padding="5")
@@ -177,15 +177,15 @@ class DatabendingApp:
         
         ttk.Label(aberration_frame, text="Red Shift:").grid(row=0, column=0, sticky=tk.W)
         self.var_red = tk.IntVar(value=0)
-        ttk.Entry(aberration_frame, textvariable=self.var_red, width=5).grid(row=0, column=1, sticky=tk.W)
+        ttk.Entry(aberration_frame, textvariable=self.var_red, width=8).grid(row=0, column=1, sticky=tk.W)
         
         ttk.Label(aberration_frame, text="Green Shift:").grid(row=1, column=0, sticky=tk.W)
         self.var_green = tk.IntVar(value=0)
-        ttk.Entry(aberration_frame, textvariable=self.var_green, width=5).grid(row=1, column=1, sticky=tk.W)
+        ttk.Entry(aberration_frame, textvariable=self.var_green, width=8).grid(row=1, column=1, sticky=tk.W)
         
         ttk.Label(aberration_frame, text="Blue Shift:").grid(row=2, column=0, sticky=tk.W)
         self.var_blue = tk.IntVar(value=0)
-        ttk.Entry(aberration_frame, textvariable=self.var_blue, width=5).grid(row=2, column=1, sticky=tk.W)
+        ttk.Entry(aberration_frame, textvariable=self.var_blue, width=8).grid(row=2, column=1, sticky=tk.W)
 
         row2_frame = ttk.Frame(main_frame)
         row2_frame.pack(fill=tk.X, pady=5)
@@ -201,7 +201,7 @@ class DatabendingApp:
         
         ttk.Label(warp_frame, text="Intensity:").grid(row=1, column=0, sticky=tk.W)
         self.var_warp_val = tk.DoubleVar(value=0.0)
-        ttk.Entry(warp_frame, textvariable=self.var_warp_val, width=5).grid(row=1, column=1, sticky=tk.W)
+        ttk.Entry(warp_frame, textvariable=self.var_warp_val, width=8).grid(row=1, column=1, sticky=tk.W)
 
         # pixel sorting
         sorting_frame = ttk.LabelFrame(row2_frame, text="Pixel Sorting", padding="5")
