@@ -30,7 +30,9 @@ pip install -r requirements.txt
 python databender_cli.py
 ```
 
-## Effects (for now)
+## Features and effects (for now)
+- **Region of Interest (ROI) mask**: Define a specific rectangular area by providing X, Y, width and height values to glitch only a targeted part of the image.
+
 - **Color Manipulation**: Adds a fixed integer value to all color channels (Red, Green, Blue).
 - **Row Shifting**: Horizontally displaces rows of pixels by a random amount.
 - **Chromatic Aberration**: Independent horizontal displacement of the Red, Green, and Blue color channels.
