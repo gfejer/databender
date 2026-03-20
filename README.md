@@ -8,6 +8,9 @@ a Python script that manipulates images by converting them into NumPy arrays and
 2. Download the version for your OS (Windows, Mac (Intel/ARM), or Linux).
 3. Run the executable.
 
+**⚠️ Note for Windows Users:**  
+Because this application is compiled using PyInstaller into a single executable, some antivirus software (like Windows Defender) might falsely flag it as a virus. This is a known "false positive" issue with Python compilers. You can safely tell your antivirus to allow the file, or inspect the open-source code and run it via Python directly!
+
 ### CLI Script
 If you want to run the script manually:
 1. Clone the repository.
@@ -31,13 +34,13 @@ python databender_cli.py
 ```
 
 ## Features and effects (for now)
-- **Region of Interest (ROI) mask**: Define a specific rectangular area by providing X, Y, width and height values to glitch only a targeted part of the image.
+- **Region of Interest (ROI) mask:** Define a specific rectangular area by providing X, Y, width and height values to glitch only a targeted part of the image.
 
-- **Color Manipulation**: Adds a fixed integer value to all color channels (Red, Green, Blue).
-- **Row Shifting**: Horizontally displaces rows of pixels by a random amount.
-- **Chromatic Aberration**: Independent horizontal displacement of the Red, Green, and Blue color channels.
-- **Pixel Sorting (lum / hue)**: Reorders pixels within specific intervals based on their mathematical properties.
-- **Warping (normal / sin)**: Distorts the geometry of the image by shifting rows based on mathematical functions.
+- **Color Manipulation:** Adds a fixed integer value to all color channels (Red, Green, Blue).
+- **Row Shifting:** Horizontally displaces rows of pixels by a random amount.
+- **Chromatic Aberration:** Independent horizontal displacement of the Red, Green, and Blue color channels.
+- **Pixel Sorting (lum / hue):** Reorders pixels within specific intervals based on their mathematical properties.
+- **Warping (normal / sin):** Distorts the geometry of the image by shifting rows based on mathematical functions.
 
 ## Example images
 
