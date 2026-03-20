@@ -71,6 +71,7 @@ class DatabendingApp:
         self.root = root
         self.root.title(f"databender-{version}")
         self.root.minsize(450, 770)
+        self.root.geometry("450x770")
         self.root.resizable(True, True)
 
         self.image_path = None
