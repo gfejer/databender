@@ -38,3 +38,17 @@ python databender_cli.py
 - **Chromatic Aberration**: Independent horizontal displacement of the Red, Green, and Blue color channels.
 - **Pixel Sorting (lum / hue)**: Reorders pixels within specific intervals based on their mathematical properties.
 - **Warping (normal / sin)**: Distorts the geometry of the image by shifting rows based on mathematical functions.
+
+## Example images
+
+<p align="center">
+    <img width="45%" height="45%" alt="havas" src="https://github.com/user-attachments/assets/c106d33e-33c2-4b1c-b7a5-75031ea18b66"/>
+  &nbsp; &nbsp;
+    <img width="45%" height="45%" alt="korszallo" src="https://github.com/user-attachments/assets/f0eb43c4-0668-4650-b88f-fccbb0c0e16b"/>
+</p>
+
+<p align="center">
+    <img width="45%" height="45%" alt="homok" src="https://github.com/user-attachments/assets/4cdc1d67-3b26-4e58-9415-30effcf17549"/>
+  &nbsp; &nbsp;
+    <img width="45%" height="45%" alt="pozsony" src="https://github.com/user-attachments/assets/816c7c5d-4943-4b9c-ad63-7166ba1c8e51" />
+</p>
