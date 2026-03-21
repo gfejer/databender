@@ -4,7 +4,7 @@ from PIL import Image
 import numpy as np
 from typing import Callable
 import os
-import cv2
+import imageio
 
 # -------------------------------- ORIGINAL FUNCTIONS --------------------------------
 
@@ -34,7 +34,7 @@ def chromatic_aberration(data, red, green, blue):
 def sort_pixels(data, value: Callable, condition: Callable, rotation: int = 0):
     pixels = np.rot90(np.array(data), rotation)
     values = value(pixels)
-    edges = np.apply_along_axis(lambda row: np.convolve(row, [-1, 1], 'same'), 0, condition(values))
+    edges = np.apply_along_axis(lambda row: np.convolve(row, [-1, 1], "same"), 0, condition(values))
     intervals = [np.flatnonzero(row) for row in edges]
 
     for row, key in enumerate(values):
@@ -45,7 +45,7 @@ def sort_pixels(data, value: Callable, condition: Callable, rotation: int = 0):
         order = np.concatenate(order)
 
         for channel in range(3):
-            pixels[row, :, channel] = pixels[row, order.astype('uint32'), channel]
+            pixels[row, :, channel] = pixels[row, order.astype("uint32"), channel]
 
     return np.rot90(pixels, -rotation)
 
@@ -245,11 +245,12 @@ class databender:
             ext = os.path.splitext(filepath)[1].lower()
         
             try:
+                # image/video resolution
                 if ext in self.video_exts:
-                    cap = cv2.VideoCapture(filepath)
-                    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                    cap.release()
+                    reader = imageio.get_reader(filepath)
+                    meta = reader.get_meta_data()
+                    w, h = meta["size"]
+                    reader.close()
                 else:
                     with Image.open(filepath) as img:
                         w, h = img.size
@@ -328,51 +329,52 @@ class databender:
         return data
 
     def process_video_render(self, input_path, save_path):
-            cap = cv2.VideoCapture(input_path)
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        reader = imageio.get_reader(input_path)
+        meta = reader.get_meta_data()
+        fps = meta["fps"]
+        
+        try:
+            total_frames = reader.count_frames()
+        except:
+            total_frames = int(meta.get("duration", 0) * fps) # if imageio can't count frames (missing from header)
+            if total_frames <= 0: total_frames = 100 # if the duration is missing from meta 
 
-            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            out = cv2.VideoWriter(save_path, fourcc, fps, (width, height))
+        writer = imageio.get_writer(save_path, fps=fps, codec="libx264", macro_block_size=None)
 
-            # progress bar
-            self.progress_bar.pack(fill=tk.X, expand=True, pady=5)
-            self.btn_preview.config(state=tk.DISABLED)
-            self.btn_save.config(state=tk.DISABLED)
+        self.progress_bar.pack(fill=tk.X, expand=True, pady=5)
+        self.btn_preview.config(state=tk.DISABLED)
+        self.btn_save.config(state=tk.DISABLED)
 
-            frame_count = 0
-            while cap.isOpened():
-                ret, frame = cap.read()
-                if not ret:
-                    break
-                
-                frame_count += 1
-                data = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB).astype("int32")
-                data = self.apply_effects(data)
-                
-                final_data = (data % 256).astype(np.uint8)
-                final_frame = cv2.cvtColor(final_data, cv2.COLOR_RGB2BGR)
-                out.write(final_frame)
+        frame_count = 0
+        for frame in reader:
+            frame_count += 1
+            
+            data = np.array(frame, dtype=np.int32)
+            data = self.apply_effects(data)
+            
+            final_data = (data % 256).astype(np.uint8)
+            writer.append_data(final_data)
 
-                # updating GUI
-                progress = (frame_count / total_frames) * 100
+            # updating GUI
+            if total_frames > 0:
+                progress = min((frame_count / total_frames) * 100, 100)
                 self.progress_var.set(progress)
                 self.lbl_status.config(text=f"Rendering video... {frame_count} / {total_frames} frames")
-                self.root.update()
+            else:
+                self.lbl_status.config(text=f"Rendering video... {frame_count} frames") # if the total frame count is unknown
+            self.root.update()
 
-            cap.release()
-            out.release()
+        reader.close()
+        writer.close()
             
-            # cleaning up
-            self.progress_bar.pack_forget()
-            self.lbl_status.config(text="")
-            self.btn_preview.config(state=tk.NORMAL)
-            self.btn_save.config(state=tk.NORMAL)
-            self.progress_var.set(0)
+        # cleaning up
+        self.progress_bar.pack_forget()
+        self.lbl_status.config(text="")
+        self.btn_preview.config(state=tk.NORMAL)
+        self.btn_save.config(state=tk.NORMAL)
+        self.progress_var.set(0)
 
-            messagebox.showinfo("Success", f"Video successfully saved:\n{save_path}")
+        messagebox.showinfo("Success", f"Video successfully saved:\n{save_path}")
 
     def process(self, save=False):
         if not self.image_path:
@@ -397,16 +399,19 @@ class databender:
                     self.lbl_status.config(text="Generating frame preview...")
                     self.root.update()
                     
-                    cap = cv2.VideoCapture(self.image_path)
-                    ret, frame = cap.read()
-                    cap.release()
-                    
-                    if ret:
-                        data = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB).astype("int32")
+                    try:
+                        reader = imageio.get_reader(self.image_path)
+                        frame = reader.get_data(0)
+                        reader.close()
+                        
+                        data = np.array(frame, dtype=np.int32)
                         data = self.apply_effects(data)
                         final_data = (data % 256).astype(np.uint8)
                         imgout = Image.fromarray(final_data, "RGB")
                         imgout.show()
+
+                    except Exception as e:
+                        messagebox.showerror("Error", f"Failed to preview video frame:\n{e}")
                     
                     self.lbl_status.config(text="")
 
