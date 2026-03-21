@@ -31,7 +31,7 @@ jobs:
 
     - name: Build App
       run: |
-        python3 -m PyInstaller --noconsole --windowed --icon=icon.icns databender.py
+        python3 -m PyInstaller --noconsole --windowed --icon=icon.icns --target-arch arm64 databender.py
         cd dist
         zip -r ../databender_mac_arm.zip databender.app
 
