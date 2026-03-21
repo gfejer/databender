@@ -8,7 +8,7 @@ import cv2
 def parse_arguments():
     # flag arguments
     parser = argparse.ArgumentParser(description="a databending script for manipulating images/videos.")
-    parser.add_argument("media", nargs='+', type=str, help="The path of your image/video.", metavar="MEDIA")
+    parser.add_argument("file", nargs='+', type=str, help="The path of your image/video.", metavar="FILE")
 
     roi_group = parser.add_argument_group("Region of Interest")
     roi_group.add_argument("--roi", nargs=5, help=("Define a specific rectangular area by providing X, Y, width and height values to glitch only a targeted part of the image."), metavar=("MODE", "X", "Y", "WIDTH", "HEIGHT"))
@@ -232,7 +232,7 @@ def main():
 
     video_exts = [".mp4", ".avi", ".mov", ".mkv"]
 
-    for file_path in args.media:
+    for file_path in args.file:
         ext = os.path.splitext(file_path)[1].lower()
 
         if ext in video_exts:
