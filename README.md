@@ -1,5 +1,5 @@
 # databender
-a Python script that manipulates images by converting them into NumPy arrays and directly editing pixel data to create unique glitch art effects.
+a Python script that manipulates images and videos by converting them into NumPy arrays and directly editing pixel data to achieve unique glitch art effects.
 
 ## Getting Started
 
@@ -42,13 +42,13 @@ python databender_cli.py
 ```
 
 ## Features and effects (for now)
-- **Region of Interest (ROI) mask:** Define a specific rectangular area by providing X, Y, width and height values to glitch only a targeted part of the image.
+- **Region of Interest (ROI) mask:** Define a specific rectangular area by providing X, Y, width and height values to glitch only a targeted part of the image/video.
 
 - **Color Manipulation:** Adds a fixed integer value to all color channels (Red, Green, Blue).
 - **Row Shifting:** Horizontally displaces rows of pixels by a random amount.
 - **Chromatic Aberration:** Independent horizontal displacement of the Red, Green, and Blue color channels.
 - **Pixel Sorting (lum / hue):** Reorders pixels within specific intervals based on their mathematical properties.
-- **Warping (normal / sin):** Distorts the geometry of the image by shifting rows based on mathematical functions.
+- **Warping (normal / sin):** Distorts the geometry of the image/video by shifting rows based on mathematical functions.
 
 ## Example images
 
@@ -63,3 +63,14 @@ python databender_cli.py
   &nbsp; &nbsp;
     <img width="45%" height="45%" alt="pozsony" src="https://github.com/user-attachments/assets/816c7c5d-4943-4b9c-ad63-7166ba1c8e51" />
 </p>
+
+## Example videos
+
+<table align="center">
+    <td width="50%">
+      <video src="https://github.com/user-attachments/assets/2c1ebbf0-3cd1-42be-b878-d63cc2857c3b" width="100%" controls autoplay loop muted></video>
+    </td>
+    <td width="29.1%">
+      <video src="https://github.com/user-attachments/assets/44576fff-bd24-4aa2-bc2a-3f3c8ff000b5" width="100%" controls autoplay loop muted></video>
+    </td>
+</table>
