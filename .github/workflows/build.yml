@@ -6,7 +6,6 @@ on:
     branches: [ main ]
     paths:
       - "**.py"
-      - "!databender_cly.py"
       - "**.ico"
       - "**.icns"
       - ".github/workflows/build.yml"
@@ -28,7 +27,7 @@ jobs:
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
-        pip install pillow numpy pyinstaller
+        pip install pillow numpy pyinstaller opencv-python
 
     - name: Build App
       run: |
@@ -56,7 +55,7 @@ jobs:
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
-        pip install pillow numpy pyinstaller
+        pip install pillow numpy pyinstaller opencv-python
 
     - name: Build App
       run: |
@@ -84,7 +83,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install pillow numpy pyinstaller
+        pip install pillow numpy pyinstaller opencv-python
 
     - name: Build EXE
       run: pyinstaller --noconsole --windowed --onefile --icon=icon.ico databender.py
@@ -109,7 +108,7 @@ jobs:
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
-        pip install pillow numpy pyinstaller
+        pip install pillow numpy pyinstaller opencv-python
 
     - name: Build Linux
       run: pyinstaller --noconsole --onefile databender.py
