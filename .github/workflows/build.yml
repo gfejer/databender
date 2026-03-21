@@ -31,7 +31,7 @@ jobs:
 
     - name: Build App
       run: |
-        python3 -m PyInstaller --noconsole --windowed --icon=icon.icns --target-arch arm64 databender.py
+        python3 -OO -m PyInstaller --noconsole --windowed --icon=icon.icns --exclude-module matplotlib --exclude-module PyQt5 --exclude-module PyQt6 --exclude-module PySide2 --exclude-module PySide6 --exclude-module IPython --exclude-module sqlite3 --exclude-module pydoc --exclude-module setuptools --exclude-module curses databender.py
         cd dist
         zip -r ../databender_mac_arm.zip databender.app
 
@@ -59,7 +59,7 @@ jobs:
 
     - name: Build App
       run: |
-        python3 -m PyInstaller --noconsole --windowed --icon=icon.icns databender.py
+        python3 -OO -m PyInstaller --noconsole --windowed --icon=icon.icns --exclude-module matplotlib --exclude-module PyQt5 --exclude-module PyQt6 --exclude-module PySide2 --exclude-module PySide6 --exclude-module IPython --exclude-module sqlite3 --exclude-module pydoc --exclude-module setuptools --exclude-module curses databender.py
         cd dist
         zip -r ../databender_mac_intel.zip databender.app
 
@@ -86,7 +86,7 @@ jobs:
         pip install pillow numpy pyinstaller opencv-python-headless
 
     - name: Build EXE
-      run: pyinstaller --noconsole --windowed --onefile --icon=icon.ico databender.py
+      run: python -OO -m PyInstaller --noconsole --windowed --onefile --icon=icon.ico --exclude-module matplotlib --exclude-module PyQt5 --exclude-module PyQt6 --exclude-module PySide2 --exclude-module PySide6 --exclude-module IPython --exclude-module sqlite3 --exclude-module pydoc --exclude-module setuptools --exclude-module curses databender.py
 
     - name: Upload Windows Artifact
       uses: actions/upload-artifact@v6  
@@ -111,7 +111,7 @@ jobs:
         pip install pillow numpy pyinstaller opencv-python-headless
 
     - name: Build Linux
-      run: pyinstaller --noconsole --onefile databender.py
+      run: python3 -OO -m PyInstaller --noconsole --onefile --exclude-module matplotlib --exclude-module PyQt5 --exclude-module PyQt6 --exclude-module PySide2 --exclude-module PySide6 --exclude-module IPython --exclude-module sqlite3 --exclude-module pydoc --exclude-module setuptools --exclude-module curses databender.py
 
     - name: Upload Linux Artifact
       uses: actions/upload-artifact@v6
