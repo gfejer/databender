@@ -24,11 +24,6 @@ jobs:
       with:
         python-version: '3.14.3'
 
-    - name: Install UPX
-      uses: crazy-max/ghaction-upx@v3
-      with:
-        install: true
-
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip
@@ -56,11 +51,6 @@ jobs:
       uses: actions/setup-python@v6
       with:
         python-version: '3.14.3'
-
-    - name: Install UPX
-      uses: crazy-max/ghaction-upx@v3
-      with:
-        install: true
 
     - name: Install dependencies
       run: |
@@ -90,11 +80,6 @@ jobs:
       with:
         python-version: '3.14.3'
 
-    - name: Install UPX
-      uses: crazy-max/ghaction-upx@v3
-      with:
-        install: true
-
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
@@ -119,11 +104,6 @@ jobs:
       uses: actions/setup-python@v6
       with:
         python-version: '3.14.3'
-    
-    - name: Install UPX
-      uses: crazy-max/ghaction-upx@v3
-      with:
-        install: true
 
     - name: Install dependencies
       run: |
