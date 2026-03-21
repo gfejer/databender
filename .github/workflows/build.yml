@@ -22,7 +22,12 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: '3.12.8'
+        python-version: '3.14.3'
+
+    - name: Install UPX
+      uses: crazy-max/ghaction-upx@v3
+      with:
+        install: true
 
     - name: Install dependencies
       run: |
@@ -50,7 +55,12 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: '3.12.8'
+        python-version: '3.14.3'
+
+    - name: Install UPX
+      uses: crazy-max/ghaction-upx@v3
+      with:
+        install: true
 
     - name: Install dependencies
       run: |
@@ -78,7 +88,12 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: '3.12.8'
+        python-version: '3.14.3'
+
+    - name: Install UPX
+      uses: crazy-max/ghaction-upx@v3
+      with:
+        install: true
 
     - name: Install dependencies
       run: |
@@ -103,7 +118,12 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: '3.12.8'
+        python-version: '3.14.3'
+    
+    - name: Install UPX
+      uses: crazy-max/ghaction-upx@v3
+      with:
+        install: true
 
     - name: Install dependencies
       run: |
