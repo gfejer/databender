@@ -4,6 +4,7 @@ from PIL import Image
 import numpy as np
 from typing import Callable
 import os
+import cv2
 
 # -------------------------------- ORIGINAL FUNCTIONS --------------------------------
 
@@ -65,9 +66,9 @@ def warp(data, mode, val):
 
 # -------------------------------- TKINTER GUI --------------------------------
 
-class DatabendingApp:
+class databender:
     def __init__(self, root):
-        version = "v1.2.1"
+        version = "v1.3.0"
         self.root = root
         self.root.title(f"databender-{version}")
         self.root.minsize(550, 650)
@@ -75,6 +76,7 @@ class DatabendingApp:
         self.root.resizable(True, True)
 
         self.image_path = None
+        self.video_exts = [".mp4", ".avi", ".mov", ".mkv"]
 
         self.create_widgets()
 
@@ -82,18 +84,18 @@ class DatabendingApp:
         main_frame = ttk.Frame(self.root, padding="10")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # upload image
+        # upload file
         file_frame = ttk.Frame(main_frame)
         file_frame.pack(fill=tk.X, pady=(0, 10))
         
-        self.btn_open = ttk.Button(file_frame, text="Upload image", command=self.load_image)
+        self.btn_open = ttk.Button(file_frame, text="Upload File", command=self.load_file)
         self.btn_open.pack(side=tk.LEFT)
         
-        self.lbl_file = ttk.Label(file_frame, text="No image uploaded")
+        self.lbl_file = ttk.Label(file_frame, text="No file uploaded")
         self.lbl_file.pack(side=tk.LEFT, padx=10)
 
-        #info
-        info_frame = ttk.LabelFrame(main_frame, text="Image Info", padding="5")
+        # info
+        info_frame = ttk.LabelFrame(main_frame, text="Info", padding="5")
         info_frame.pack(fill=tk.X, pady=(0, 10))
 
         self.var_info_x = tk.StringVar(value="X: ")
@@ -111,11 +113,6 @@ class DatabendingApp:
 
         roi_frame.columnconfigure(1, weight=1)
         roi_frame.columnconfigure(4, weight=1)
-
-        """
-        self.var_roi_enable = tk.BooleanVar(value=False)
-        ttk.Checkbutton(roi_frame, text="Enable Area Mask", variable=self.var_roi_enable).grid(row=0, column=0, columnspan=4, sticky=tk.W, pady=(0, 5))
-        """
 
         ttk.Label(roi_frame, text="Mode:").grid(row=0, column=0, sticky=tk.E, padx=2)
         self.var_roi_mode = tk.StringVar(value="none")
@@ -214,6 +211,16 @@ class DatabendingApp:
         sort_cb = ttk.Combobox(sorting_frame, textvariable=self.var_sort_mode, values=["none", "lum", "hue"], state="readonly", width=8)
         sort_cb.grid(row=0, column=1, sticky=tk.W)
 
+        # progress bar
+        self.progress_frame = ttk.Frame(main_frame)
+        self.progress_frame.pack(fill=tk.X, pady=(10, 0))
+        
+        self.lbl_status = ttk.Label(self.progress_frame, text="")
+        self.lbl_status.pack(side=tk.TOP, anchor=tk.W)
+        
+        self.progress_var = tk.DoubleVar()
+        self.progress_bar = ttk.Progressbar(self.progress_frame, variable=self.progress_var, maximum=100)
+        
         # action buttons
         action_frame = ttk.Frame(main_frame)
         action_frame.pack(fill=tk.X, pady=15)
@@ -224,145 +231,220 @@ class DatabendingApp:
         self.btn_save = ttk.Button(action_frame, text="Save as...", command=lambda: self.process(save=True))
         self.btn_save.pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=(5, 0))
 
-    def load_image(self):
+    def load_file(self):
         filetypes = (
-            ("Image files", "*.jpg *.jpeg *.png *.bmp *.tiff"),
+            ("Image files", "*.jpg *.jpeg *.png *.bmp"),
+            ("Video files", "*.mp4 *.avi *.mov *.mkv"),
             ("Every file", "*.*")
         )
-        filepath = filedialog.askopenfilename(title="Choose an image", filetypes=filetypes)
+        filepath = filedialog.askopenfilename(title="Choose a file", filetypes=filetypes)
+        
         if filepath:
             self.image_path = filepath
             self.lbl_file.config(text=os.path.basename(filepath))
+            ext = os.path.splitext(filepath)[1].lower()
         
             try:
+                if ext in self.video_exts:
+                    cap = cv2.VideoCapture(filepath)
+                    w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                    h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                    cap.release()
+                else:
                     with Image.open(filepath) as img:
                         w, h = img.size
-                    
-                    self.var_info_x.set(f"X: {w}")
-                    self.var_info_y.set(f"Y: {h}")
+                
+                self.var_info_x.set(f"X: {w}")
+                self.var_info_y.set(f"Y: {h}")
 
-                    self.slider_roi_x.config(to=w-1)
-                    self.slider_roi_y.config(to=h-1)
+                self.slider_roi_x.config(to=max(0, w-1))
+                self.slider_roi_y.config(to=max(0, h-1))
 
-                    self.var_roi_x.set(0)
-                    self.var_roi_y.set(0)
-                    
+                self.var_roi_x.set(0)
+                self.var_roi_y.set(0)
+
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to read image dimensions:\n{str(e)}")
 
-    def process(self, save=False):
-        if not self.image_path:
-            messagebox.showwarning("Notice", "Please upload an image first!")
-            return
+    def apply_effects(self, data):
+        img_h, img_w = data.shape[:2]
+        roi_mode = self.var_roi_mode.get()
+        target_data = data.copy()
+        original_roi = None
+        rx, ry, rw, rh = 0, 0, img_w, img_h
 
-        try:
-            # image to numpy array
-            imgin = Image.open(self.image_path)
-            imgin.load()
-            data = np.asarray(imgin, dtype="int32")
-            
-            img_h, img_w = data.shape[:2]
+        if roi_mode in ["inside", "outside"]:
+            try:
+                rx = self.var_roi_x.get()
+                ry = self.var_roi_y.get()
+                rw = int(self.var_roi_w.get()) if self.var_roi_w.get() else img_w
+                rh = int(self.var_roi_h.get()) if self.var_roi_h.get() else img_h
 
-            # --- ROI KIVÁGÁSA ---
-            roi_mode = self.var_roi_mode.get()
-            if roi_mode == "outside":
-                try:
-                    rx = self.var_roi_x.get()
-                    ry = self.var_roi_y.get()
+                rw = max(1, min(rw, img_w - rx))
+                rh = max(1, min(rh, img_h - ry))
 
-                    rw = int(self.var_roi_w.get()) if self.var_roi_w.get() else img_w
-                    rh = int(self.var_roi_h.get()) if self.var_roi_h.get() else img_h
-
-                    rw = max(1, min(rw, img_w - rx))
-                    rh = max(1, min(rh, img_h - ry))
-
+                if roi_mode == "outside":
                     original_roi = data[ry:ry+rh, rx:rx+rw].copy()
-                    target_data = data.copy()
-
-                except ValueError:
-                    messagebox.showerror("Error", "ROI coordinates must be whole numbers!")
-                    return
-                
-            elif roi_mode == "inside":
-                try:
-                    rx = self.var_roi_x.get()
-                    ry = self.var_roi_y.get()
-
-                    rw = int(self.var_roi_w.get()) if self.var_roi_w.get() else img_w
-                    rh = int(self.var_roi_h.get()) if self.var_roi_h.get() else img_h
-
-                    rw = max(1, min(rw, img_w - rx))
-                    rh = max(1, min(rh, img_h - ry))
-
+                elif roi_mode == "inside":
                     target_data = data[ry:ry+rh, rx:rx+rw].copy()
 
-                except ValueError:
-                    messagebox.showerror("Error", "ROI coordinates must be whole numbers!")
-                    return
-    
-                except ValueError:
-                    messagebox.showerror("Error", "ROI coordinates must be whole numbers!")
-                    return
+            except ValueError:
+                messagebox.showerror("Error", "ROI coordinates must be whole numbers!")
+                return data
+
+        # applying color offset
+        target_data = color_offset(target_data, self.var_color_offset.get())
+        
+        # applying row shifting
+        if self.var_do_shift.get():
+            target_data = row_shifting(target_data, self.var_probability.get(), self.var_shift.get())
+
+        # applying chromatic aberration
+        target_data = chromatic_aberration(target_data, self.var_red.get(), self.var_green.get(), self.var_blue.get())    
+
+        # applying pixel sort
+        sort_mode = self.var_sort_mode.get()
+        if sort_mode == "lum":
+            target_data = sort_pixels(target_data, lambda pixels: np.average(pixels, axis=2) / 255, lambda lum: (lum > 2 / 6) & (lum < 4 / 6), 1)
+        elif sort_mode == "hue":
+            target_data = sort_pixels(target_data, hue, lambda h: (h > 2 / 6) & (h < 4 / 6), 1)
+            
+        # applying warp
+        warp_mode = self.var_warp_mode.get()
+        if warp_mode != "none":
+            target_data = warp(target_data, warp_mode, self.var_warp_val.get())
+
+        # placing ROI back
+        if roi_mode == "inside":
+            data[ry:ry+rh, rx:rx+rw] = target_data
+
+        elif roi_mode == "outside":
+            target_data[ry:ry+rh, rx:rx+rw] = original_roi
+            data = target_data
+
+        else:
+            data = target_data
+
+        return data
+
+    def process_video_render(self, input_path, save_path):
+            cap = cv2.VideoCapture(input_path)
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+            height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out = cv2.VideoWriter(save_path, fourcc, fps, (width, height))
+
+            # progress bar
+            self.progress_bar.pack(fill=tk.X, expand=True, pady=5)
+            self.btn_preview.config(state=tk.DISABLED)
+            self.btn_save.config(state=tk.DISABLED)
+
+            frame_count = 0
+            while cap.isOpened():
+                ret, frame = cap.read()
+                if not ret:
+                    break
+                
+                frame_count += 1
+                data = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB).astype("int32")
+                data = self.apply_effects(data)
+                
+                final_data = (data % 256).astype(np.uint8)
+                final_frame = cv2.cvtColor(final_data, cv2.COLOR_RGB2BGR)
+                out.write(final_frame)
+
+                # updating GUI
+                progress = (frame_count / total_frames) * 100
+                self.progress_var.set(progress)
+                self.lbl_status.config(text=f"Rendering video... {frame_count} / {total_frames} frames")
+                self.root.update()
+
+            cap.release()
+            out.release()
+            
+            # cleaning up
+            self.progress_bar.pack_forget()
+            self.lbl_status.config(text="")
+            self.btn_preview.config(state=tk.NORMAL)
+            self.btn_save.config(state=tk.NORMAL)
+            self.progress_var.set(0)
+
+            messagebox.showinfo("Success", f"Video successfully saved:\n{save_path}")
+
+    def process(self, save=False):
+        if not self.image_path:
+            messagebox.showwarning("Notice", "Please upload a file first!")
+            return
+
+        ext = os.path.splitext(self.image_path)[1].lower()
+        is_video = ext in self.video_exts
+
+        try:
+            # --- PROCESSING VIDEO ---
+            if is_video:
+                if save:
+                    save_path = filedialog.asksaveasfilename(
+                        defaultextension=".mp4", 
+                        filetypes=[("MP4 Video", "*.mp4")]
+                    )
+                    if save_path:
+                        self.process_video_render(self.image_path, save_path)
+                else:
+                    # showing the first frame edited
+                    self.lbl_status.config(text="Generating frame preview...")
+                    self.root.update()
+                    
+                    cap = cv2.VideoCapture(self.image_path)
+                    ret, frame = cap.read()
+                    cap.release()
+                    
+                    if ret:
+                        data = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB).astype("int32")
+                        data = self.apply_effects(data)
+                        final_data = (data % 256).astype(np.uint8)
+                        imgout = Image.fromarray(final_data, "RGB")
+                        imgout.show()
+                    
+                    self.lbl_status.config(text="")
+
             else:
-                target_data = data.copy()
+                # --- PROCESSING IMAGE ---
+                self.lbl_status.config(text="Processing image...")
+                self.root.update()
 
-            # color offset
-            target_data = color_offset(target_data, self.var_color_offset.get())
+                imgin = Image.open(self.image_path)
+                imgin.load()
+                data = np.asarray(imgin, dtype="int32")
 
-            # row shifting
-            if self.var_do_shift.get():
-                target_data = row_shifting(target_data, self.var_probability.get(), self.var_shift.get())
-            
-            # chromatic aberration
-            target_data = chromatic_aberration(target_data, self.var_red.get(), self.var_green.get(), self.var_blue.get())    
+                data = self.apply_effects(data)
 
-            # pixel sorting
-            sort_mode = self.var_sort_mode.get()
-            if sort_mode == "lum":
-                target_data = sort_pixels(target_data,
-                    lambda pixels: np.average(pixels, axis=2) / 255,
-                    lambda lum: (lum > 2 / 6) & (lum < 4 / 6), 1)
-            
-            elif sort_mode == "hue":
-                target_data = sort_pixels(target_data, hue, lambda h: (h > 2 / 6) & (h < 4 / 6), 1)
-            
-            # warping
-            warp_mode = self.var_warp_mode.get()
-            if warp_mode != "none":
-                target_data = warp(target_data, warp_mode, self.var_warp_val.get())
+                final_data = (data % 256).astype(np.uint8)
+                imgout = Image.fromarray(final_data, "RGB")
 
-            # --- placing the ROI back on the image ---
-            roi_mode = self.var_roi_mode.get()
-            if roi_mode == "inside":
-                data[ry:ry+rh, rx:rx+rw] = target_data
+                self.lbl_status.config(text="")
 
-            elif roi_mode == "outside":
-                target_data[ry:ry+rh, rx:rx+rw] = original_roi
-                data = target_data
-            
-            else:
-                data = target_data
-
-            # numpy array to image
-            final_data = (data % 256).astype(np.uint8)
-            imgout = Image.fromarray(final_data, "RGB")
-
-            # handling results
-            if save:
-                save_path = filedialog.asksaveasfilename(
-                    defaultextension=".png", 
-                    filetypes=[("PNG file", "*.png"), ("JPEG file", "*.jpg")]
-                )
-                if save_path:
-                    imgout.save(save_path)
-                    messagebox.showinfo("Success", f"Image successfully saved:\n{save_path}")
-            else:
-                imgout.show()
+                if save:
+                    save_path = filedialog.asksaveasfilename(
+                        defaultextension=".png", 
+                        filetypes=[("PNG file", "*.png"), ("JPEG file", "*.jpg")]
+                    )
+                    if save_path:
+                        imgout.save(save_path)
+                        messagebox.showinfo("Success", f"Image successfully saved:\n{save_path}")
+                else:
+                    imgout.show()
 
         except Exception as e:
-            messagebox.showerror("Error", f"An error occurred while processing the image:\n{str(e)}")
+            self.lbl_status.config(text="")
+            self.progress_bar.pack_forget()
+            self.btn_preview.config(state=tk.NORMAL)
+            self.btn_save.config(state=tk.NORMAL)
+            messagebox.showerror("Error", f"An error occurred:\n{str(e)}")
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = DatabendingApp(root)
+    app = databender(root)
     root.mainloop()
