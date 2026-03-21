@@ -6,6 +6,7 @@ on:
     branches: [ main ]
     paths:
       - "**.py"
+      - "!databender_cly.py"
       - "**.ico"
       - "**.icns"
       - ".github/workflows/build.yml"
