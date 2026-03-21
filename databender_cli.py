@@ -1,12 +1,16 @@
 from PIL import Image
 import numpy as np
 import argparse
+import os
 from typing import Callable
 
 def parse_arguments():
     # flag arguments
     parser = argparse.ArgumentParser(description="Databending script for manipulating images.")
-    parser.add_argument("image", type=str, help="The path of your image.", metavar="IMAGE")
+    parser.add_argument("images", nargs='+', type=str, help="The path(s) of your image(s).", metavar="IMAGES")
+
+    roi_group = parser.add_argument_group("Region of Interest")
+    roi_group.add_argument("--roi", nargs=5, help=("Define a specific rectangular area by providing X, Y, width and height values to glitch only a targeted part of the image."), metavar=("MODE", "X", "Y", "WIDTH", "HEIGHT"))
 
     color_group = parser.add_argument_group('Color Manipulation')
     color_group.add_argument("-c", "--color-offset", type=int, required=False, default=0, help="Adds an integer value to all color channels (R, G, B) using wrap-around (modulo 256) arithmetic. (0-255)")
@@ -27,7 +31,7 @@ def parse_arguments():
     warp_group = parser.add_argument_group("Warping")
     warp_group.add_argument("--warp", nargs=2, help="Warping mode (normal/sin) and intensity (for normal mode 1-20).", metavar=("MODE", "VAL"))
 
-    parser.add_argument("-s", "--save", type=str, required=False, help="Input filename to save file.", metavar="FILENAME")
+    parser.add_argument("-o", "--out-dir", type=str, required=False, help="Output directory to save files. If omitted, images will just be displayed.", metavar="DIR")
 
     args = parser.parse_args()
 
@@ -111,37 +115,87 @@ def warp(data, mode, val):
 def main():
     args = parse_arguments()
 
-    # image to numpy array
-    imgin = Image.open(args.image)
-    imgin.load()
-    data = np.asarray(imgin, dtype="int32")
+    if args.out_dir:
+        os.makedirs(args.out_dir)
 
-    data = color_offset(data, args.color_offset)
+    for image_path in args.images:
+        print(f"Processing: {image_path}")
 
-    if args.do_shift:
-        data = row_shifting(data, args.probability, args.shift)
-    
-    data = chromatic_aberration(data, args.red, args.green, args.blue)    
+        try:
+            # image to numpy array
+            imgin = Image.open(image_path)
+            imgin.load()
+            data = np.asarray(imgin, dtype="int32")
 
-    if args.sort == "lum":
-        data = sort_pixels(data,
-                lambda pixels: np.average(pixels, axis=2) / 255,
-                lambda lum: (lum > 2 / 6) & (lum < 4 / 6), 1)
+            # --- CUTTING THE ROI ---
+            img_h, img_w = data.shape[:2]
+
+            roi_mode = "none"
+            target_data = data.copy()
+            original_roi = None
+            rx, ry, rw, rh = 0, 0, img_w, img_h
+
+            if args.roi:
+                roi_mode = args.roi[0]
+                try:
+                    rx = int(args.roi[1])
+                    ry = int(args.roi[2])
+
+                    rw = int(args.roi[3]) if len(args.roi) > 3 and args.roi[3] else img_w
+                    rh = int(args.roi[4]) if len(args.roi) > 4 and args.roi[4] else img_h
+
+                    rw = max(1, min(rw, img_w - rx))
+                    rh = max(1, min(rh, img_h - ry))
+
+                    if roi_mode == "outside":
+                        original_roi = data[ry:ry+rh, rx:rx+rw].copy()
+
+                    elif roi_mode == "inside":
+                        target_data = data[ry:ry+rh, rx:rx+rw].copy()
+
+                except ValueError:
+                    print("Error", "ROI coordinates must be whole numbers!")
+                    continue
+
+            target_data = color_offset(target_data, args.color_offset)
+
+            if args.do_shift:
+                target_data = row_shifting(target_data, args.probability, args.shift)
+            
+            target_data = chromatic_aberration(target_data, args.red, args.green, args.blue)    
+
+            if args.sort == "lum":
+                target_data = sort_pixels(target_data,
+                        lambda pixels: np.average(pixels, axis=2) / 255,
+                        lambda lum: (lum > 2 / 6) & (lum < 4 / 6), 1)
+                
+            elif args.sort == "hue":
+                target_data = sort_pixels(target_data, hue, lambda h: (h > 2 / 6) & (h < 4 / 6), 1)
+
+            if args.warp:
+                target_data = warp(target_data,args.warp[0], args.warp[1])
+
+            if roi_mode == "inside":
+                data[ry:ry+rh, rx:rx+rw] = target_data
+            elif roi_mode == "outside":
+                target_data[ry:ry+rh, rx:rx+rw] = original_roi
+                data = target_data
+            else:
+                data = target_data
+
+            # numpy array to image
+            final_data = (data % 256).astype(np.uint8)
+            imgout = Image.fromarray(final_data, "RGB")
+
+            if args.out_dir:
+                base_filename = os.path.basename(image_path)
+                save_path = os.path.join(args.out_dir, base_filename)
+                imgout.save(save_path)
+            else:
+                imgout.show()
         
-    elif args.sort == "hue":
-        data = sort_pixels(data, hue, lambda h: (h > 2 / 6) & (h < 4 / 6), 1)
-
-    if args.warp:
-        data = warp(data,args.warp[0], args.warp[1])
-
-    # numpy array to image
-    final_data = (data % 256).astype(np.uint8)
-    imgout = Image.fromarray(final_data, "RGB")
-
-    if args.save:
-        imgout.save(args.save)
-    else:
-        imgout.show()
+        except Exception as e:
+            print(f"There was an error processing {image_path}, {e}")
 
 if __name__ == "__main__":
     main()
