@@ -3,7 +3,7 @@ import numpy as np
 import argparse
 import os
 from typing import Callable
-import cv2
+import imageio
 
 def parse_arguments():
     # flag arguments
@@ -179,33 +179,37 @@ def apply_effects(data, args):
     return data
 
 def process_video(input_path, output_path, args):
-    cap = cv2.VideoCapture(input_path)
+    reader = imageio.get_reader(input_path)
+    meta = reader.get_meta_data()
+    fps = meta["fps"]
+        
+    try:
+        total_frames = reader.count_frames()
+    except:
+        total_frames = int(meta.get("duration", 0) * fps) # if imageio can't count frames (missing from header)
+        if total_frames <= 0: total_frames = 100 # if the duration is missing from meta 
 
-    # video properties
-    fps = cap.get(cv2.CAP_PROP_FPS)
-    width  = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+    writer = imageio.get_writer(output_path, fps=fps, codec="libx264", macro_block_size=None)
 
     frame_count = 0
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            break
         
+    for frame in reader:
         frame_count += 1
-        print(f"Processing frame: {frame_count}/{total_frames}", end="\r")
-        data = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB).astype("int32")
-        data = apply_effects(data, args)
-        final_data = (data % 256).astype(np.uint8)
-        final_frame = cv2.cvtColor(final_data, cv2.COLOR_RGB2BGR)
-        out.write(final_frame)
 
-    cap.release()
-    out.release()
+        if total_frames != "Unknown":
+            print(f"Processing frame: {frame_count}/{total_frames}", end="\r")
+
+        else:
+            print(f"Processing frame: {frame_count}", end="\r")
+
+        data = np.array(frame, dtype=np.int32)
+        data = apply_effects(data, args)
+
+        final_data = (data % 256).astype(np.uint8)
+        writer.append_data(final_data)
+        
+    reader.close()
+    writer.close()
     print(f"\nVideo saved: {output_path}")
 
 # to avoid overwriting files
