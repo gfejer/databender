@@ -8,6 +8,9 @@ import imageio
 # for update functions
 import urllib.request
 import json
+import ssl
+import certifi
+
 import webbrowser
 import threading
 import queue
@@ -196,9 +199,12 @@ class databender:
     def check_for_updates(self):
         # runs in the background on another thread
         api_url = f"https://api.github.com/repos/{self.repo_url}/releases/latest"
+        
         try:
             req = urllib.request.Request(api_url, headers={'User-Agent': 'Mozilla/5.0'})
-            with urllib.request.urlopen(req, timeout=5) as response:
+            context = ssl.create_default_context(cafile=certifi.where())
+
+            with urllib.request.urlopen(req, timeout=5, context=context) as response:
                 data = json.loads(response.read().decode())
                 
             latest_version = data.get("tag_name", "")
