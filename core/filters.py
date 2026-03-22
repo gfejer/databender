@@ -3,6 +3,29 @@ from PIL import Image
 from typing import Callable
 
 
+def sort_pixels(data, value: Callable, condition: Callable, rotation: int = 0):
+    # https://www.reddit.com/r/pixelsorting/comments/dewpt6/pixel_sorting_in_20_lines_of_python_using_numpy/
+    pixels = np.rot90(np.array(data), rotation)
+    values = value(pixels)
+    edges = np.apply_along_axis(lambda row: np.convolve(row, [-1, 1], 'same'), 0, condition(values))
+    intervals = [np.flatnonzero(row) for row in edges]
+
+    for row, key in enumerate(values):
+        order = np.split(key, intervals[row])
+        for index, interval in enumerate(order[1:]):
+            order[index + 1] = np.argsort(interval) + intervals[row][index]
+        order[0] = range(order[0].size)
+        order = np.concatenate(order)
+
+        for channel in range(3):
+            pixels[row, :, channel] = pixels[row, order.astype('uint32'), channel]
+
+    return np.rot90(pixels, -rotation)
+
+def hue(pixels):
+    r, g, b = np.split(pixels, 3, 2)
+    return np.arctan2(np.sqrt(3) * (g - b), 2 * r - g - b)[:, :, 0]
+
 def color_offset(data, offset):
     # color offset
     if offset == 0:
@@ -32,30 +55,28 @@ def chromatic_aberration(data, red, green, blue):
 
     return data
 
-def sort_pixels(data, value: Callable, condition: Callable, rotation: int = 0):
-    # https://www.reddit.com/r/pixelsorting/comments/dewpt6/pixel_sorting_in_20_lines_of_python_using_numpy/
-    pixels = np.rot90(np.array(data), rotation)
-    values = value(pixels)
-    edges = np.apply_along_axis(lambda row: np.convolve(row, [-1, 1], 'same'), 0, condition(values))
-    intervals = [np.flatnonzero(row) for row in edges]
+def channel_swapping(data, mode):
+    # channel swapping
+    if mode == "BGR":
+        data = data[:,:,[2, 1, 0]]
 
-    for row, key in enumerate(values):
-        order = np.split(key, intervals[row])
-        for index, interval in enumerate(order[1:]):
-            order[index + 1] = np.argsort(interval) + intervals[row][index]
-        order[0] = range(order[0].size)
-        order = np.concatenate(order)
+    elif mode == "BRG":
+        data = data[:,:,[2, 0, 1]]
 
-        for channel in range(3):
-            pixels[row, :, channel] = pixels[row, order.astype('uint32'), channel]
-
-    return np.rot90(pixels, -rotation)
-
-def hue(pixels):
-    r, g, b = np.split(pixels, 3, 2)
-    return np.arctan2(np.sqrt(3) * (g - b), 2 * r - g - b)[:, :, 0]
+    elif mode == "GRB":
+        data = data[:,:,[1, 0, 2]]
+    
+    elif mode == "GBR":
+        data = data[:,:,[1, 2, 0]]
+    
+    elif mode == "RBG":
+        data = data[:,:,[0, 2, 1]]
+    else:
+        pass
+    return data
 
 def warp(data, mode, val):
+    # warping
     height = data.shape[0]
     val = float(val)
 
@@ -66,4 +87,35 @@ def warp(data, mode, val):
             data[i] = np.roll(data[i], int(val * np.sin(i / 10.0)), axis=0)
         else: 
             continue
+    return data
+
+def block_displacement(data, num_blocks, max_block_size, shift_amount):
+    # block displacement
+    height, width = data.shape[:2]
+    
+    if shift_amount <= 0 or max_block_size <= 10:
+        return data
+
+    # to avoid the block being bigger than the image
+    safe_max_size = min(max_block_size, width - 1, height - 1)
+    
+    if safe_max_size <= 10:
+        return data
+
+    for i in range(num_blocks):
+        bw = np.random.randint(10, safe_max_size)
+        bh = np.random.randint(10, safe_max_size)
+
+        src_x = np.random.randint(0, width - bw)
+        src_y = np.random.randint(0, height - bh)
+
+        shift_x = np.random.randint(-shift_amount, shift_amount + 1)
+        shift_y = np.random.randint(-shift_amount, shift_amount + 1)
+
+        dst_x = np.clip(src_x + shift_x, 0, width - bw)
+        dst_y = np.clip(src_y + shift_y, 0, height - bh)
+
+        block = data[src_y:src_y+bh, src_x:src_x+bw].copy()
+        data[dst_y:dst_y+bh, dst_x:dst_x+bw] = block
+
     return data
