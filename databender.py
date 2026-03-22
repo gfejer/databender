@@ -20,15 +20,15 @@ from core.processor import apply_effects
 
 class databender:
     def __init__(self, root):
-        self.version = "v1.3.1"
+        self.version = "v1.3.2"
         self.repo_url = "gfejer/databender"
         self.update_queue = queue.Queue()
 
         self.root = root
         self.root.title(f"databender-{self.version}")
 
-        self.root.minsize(550, 670)
-        self.root.geometry("550x670")
+        self.root.minsize(650, 750)
+        self.root.geometry("650x750")
         self.root.resizable(True, True)
 
         self.image_path = None
@@ -162,8 +162,41 @@ class databender:
         self.var_warp_val = tk.DoubleVar(value=0.0)
         ttk.Entry(warp_frame, textvariable=self.var_warp_val, width=8).grid(row=1, column=1, sticky=tk.W)
 
+        # block displacement
+        displace_frame = ttk.LabelFrame(row2_frame, text="Block Displacement", padding=5)
+        displace_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0))
+
+        displace_frame.columnconfigure(1, weight=1)
+
+        ttk.Label(displace_frame, text="Number of Blocks:").grid(row=0, column=0, sticky=tk.W)
+        self.var_num_blocks = tk.IntVar(value=0)
+        ttk.Scale(displace_frame, from_=0, to=500, variable=self.var_num_blocks, orient=tk.HORIZONTAL, command=lambda v: self.var_num_blocks.set(int(float(v)))).grid(row=0, column=1, sticky=tk.EW, padx=5)
+        ttk.Entry(displace_frame, textvariable=self.var_num_blocks, width=3).grid(row=0, column=2, sticky=tk.W)
+
+        ttk.Label(displace_frame, text="Max Block Size:").grid(row=1, column=0, sticky=tk.W)
+        self.var_max_block_size = tk.IntVar(value=10)
+        ttk.Scale(displace_frame, from_=10, to=500, variable=self.var_max_block_size, orient=tk.HORIZONTAL, command=lambda v: self.var_max_block_size.set(int(float(v)))).grid(row=1, column=1, sticky=tk.EW, padx=5)
+        ttk.Entry(displace_frame, textvariable=self.var_max_block_size, width=3).grid(row=1, column=2, sticky=tk.W)
+
+        ttk.Label(displace_frame, text="Max Shift Amount").grid(row=2, column=0, sticky=tk.W)
+        self.var_shift_amount = tk.IntVar(value=0)
+        ttk.Scale(displace_frame, from_=0, to=500, variable=self.var_shift_amount, orient=tk.HORIZONTAL, command=lambda v: self.var_shift_amount.set(int(float(v)))).grid(row=2, column=1, sticky=tk.EW, padx=5)
+        ttk.Entry(displace_frame, textvariable=self.var_shift_amount, width=3).grid(row=2, column=2, sticky=tk.W)
+
+        row3_frame = ttk.Frame(main_frame)
+        row3_frame.pack(fill=tk.X, pady=5)
+
+        # channel swapping
+        swapping_frame = ttk.LabelFrame(row3_frame, text="Channel Swapping", padding="5")
+        swapping_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 5))
+
+        ttk.Label(swapping_frame, text="Mode:").grid(row=0, column=0, sticky=tk.W)
+        self.var_channel_swapping_mode = tk.StringVar(value="none")
+        swap_cb = ttk.Combobox(swapping_frame, textvariable=self.var_channel_swapping_mode, values=["none", "RBG", "GRB", "GBR", "BRG", "BGR"], state="readonly", width=8)
+        swap_cb.grid(row=0, column=1, sticky=tk.W)
+
         # pixel sorting
-        sorting_frame = ttk.LabelFrame(row2_frame, text="Pixel Sorting", padding="5")
+        sorting_frame = ttk.LabelFrame(row3_frame, text="Pixel Sorting", padding="5")
         sorting_frame.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(5, 0))
         
         ttk.Label(sorting_frame, text="Mode:").grid(row=0, column=0, sticky=tk.W)
@@ -175,7 +208,7 @@ class databender:
         self.progress_frame = ttk.Frame(main_frame)
         self.progress_frame.pack(fill=tk.X, pady=(10, 0))
         
-        self.lbl_status = ttk.Label(self.progress_frame, text="")
+        self.lbl_status = ttk.Label(self.progress_frame)
         self.lbl_status.pack(side=tk.TOP, anchor=tk.W)
         
         self.progress_var = tk.DoubleVar()
@@ -357,10 +390,16 @@ class databender:
             "green": self.var_green.get(),
             "blue": self.var_blue.get(),
 
+            "cswap_mode": self.var_channel_swapping_mode.get(),
+
             "sort_mode": self.var_sort_mode.get(),
 
             "warp_mode": self.var_warp_mode.get(),
-            "warp_val": self.var_warp_val.get()
+            "warp_val": self.var_warp_val.get(),
+
+            "num_blocks": self.var_num_blocks.get(), 
+            "max_block_size": self.var_max_block_size.get(),
+            "shift_amount": self.var_shift_amount.get()
         }
 
         ext = os.path.splitext(self.image_path)[1].lower()
