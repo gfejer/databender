@@ -1,78 +1,31 @@
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from PIL import Image
-import numpy as np
-from typing import Callable
+
+# for processing video
 import os
 import imageio
 
-# -------------------------------- ORIGINAL FUNCTIONS --------------------------------
+# for update functions
+import urllib.request
+import json
+import webbrowser
+import threading
+import queue
 
-def color_offset(data, offset):
-    if offset == 0:
-        return data
-    else:
-        return data + offset
-
-def row_shifting(data, probability, max_shift):
-    height = data.shape[0]
-    for i in range(height):
-        if np.random.rand() < probability:
-            shift = np.random.randint(-max_shift, max_shift)
-            data[i] = np.roll(data[i], shift, axis=0)
-    return data
-
-def chromatic_aberration(data, red, green, blue):
-    if red != 0:
-        data[:,:,0] = np.roll(data[:,:,0], red, axis=1)
-    if green != 0:
-        data[:,:,1] = np.roll(data[:,:,1], green, axis=1)
-    if blue != 0:
-        data[:,:,2] = np.roll(data[:,:,2], blue, axis=1)
-    return data
-
-def sort_pixels(data, value: Callable, condition: Callable, rotation: int = 0):
-    pixels = np.rot90(np.array(data), rotation)
-    values = value(pixels)
-    edges = np.apply_along_axis(lambda row: np.convolve(row, [-1, 1], "same"), 0, condition(values))
-    intervals = [np.flatnonzero(row) for row in edges]
-
-    for row, key in enumerate(values):
-        order = np.split(key, intervals[row])
-        for index, interval in enumerate(order[1:]):
-            order[index + 1] = np.argsort(interval) + intervals[row][index]
-        order[0] = range(order[0].size)
-        order = np.concatenate(order)
-
-        for channel in range(3):
-            pixels[row, :, channel] = pixels[row, order.astype("uint32"), channel]
-
-    return np.rot90(pixels, -rotation)
-
-def hue(pixels):
-    r, g, b = np.split(pixels[:, :, :3], 3, 2)
-    return np.arctan2(np.sqrt(3) * (g - b), 2 * r - g - b)[:, :, 0]
-
-def warp(data, mode, val):
-    height = data.shape[0]
-    val = float(val)
-
-    for i in range(height):
-        if mode == "normal":
-            data[i] = np.roll(data[i], int(i/(21 - val)), axis=0)
-        elif mode == "sin":
-            data[i] = np.roll(data[i], int(val * np.sin(i / 10.0)), axis=0)
-    return data
-
-# -------------------------------- TKINTER GUI --------------------------------
+from core.filters import *
+from core.processor import apply_effects
 
 class databender:
     def __init__(self, root):
-        version = "v1.3.0"
+        self.version = "v1.3.1"
+        self.repo_url = "gfejer/databender"
+        self.update_queue = queue.Queue()
+
         self.root = root
-        self.root.title(f"databender-{version}")
-        self.root.minsize(550, 650)
-        self.root.geometry("550x650")
+        self.root.title(f"databender-{self.version}")
+
+        self.root.minsize(550, 670)
+        self.root.geometry("550x670")
         self.root.resizable(True, True)
 
         self.image_path = None
@@ -85,14 +38,18 @@ class databender:
         main_frame.pack(fill=tk.BOTH, expand=True)
 
         # upload file
-        file_frame = ttk.Frame(main_frame)
-        file_frame.pack(fill=tk.X, pady=(0, 10))
+        fileandupdate_frame = ttk.Frame(main_frame)
+        fileandupdate_frame.pack(fill=tk.X, pady=(0, 10))
         
-        self.btn_open = ttk.Button(file_frame, text="Upload File", command=self.load_file)
+        self.btn_open = ttk.Button(fileandupdate_frame, text="Upload File", command=self.load_file)
         self.btn_open.pack(side=tk.LEFT)
         
-        self.lbl_file = ttk.Label(file_frame, text="No file uploaded")
+        self.lbl_file = ttk.Label(fileandupdate_frame, text="No file uploaded")
         self.lbl_file.pack(side=tk.LEFT, padx=10)
+
+        # update button
+        self.btn_update = ttk.Button(fileandupdate_frame, text="Check for Updates", command=self.start_update_check)
+        self.btn_update.pack(side=tk.RIGHT, padx=5)
 
         # info
         info_frame = ttk.LabelFrame(main_frame, text="Info", padding="5")
@@ -231,6 +188,57 @@ class databender:
         self.btn_save = ttk.Button(action_frame, text="Save as...", command=lambda: self.process(save=True))
         self.btn_save.pack(side=tk.RIGHT, fill=tk.X, expand=True, padx=(5, 0))
 
+    def start_update_check(self):
+        self.btn_update.config(state=tk.DISABLED, text="Checking...")
+        threading.Thread(target=self.check_for_updates, daemon=True).start()
+        self.root.after(100, self.process_update_queue)
+
+    def check_for_updates(self):
+        # runs in the background on another thread
+        api_url = f"https://api.github.com/repos/{self.repo_url}/releases/latest"
+        try:
+            req = urllib.request.Request(api_url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=5) as response:
+                data = json.loads(response.read().decode())
+                
+            latest_version = data.get("tag_name", "")
+            release_url = data.get("html_url", "")
+            
+            # result gets thrown in the queue
+            self.update_queue.put({"status": "success", "version": latest_version, "url": release_url})
+            
+        except Exception as e:
+            # error gets thrown in the queue
+            self.update_queue.put({"status": "error", "message": str(e)})
+
+    def process_update_queue(self):
+        # this runs on the main thread
+        try:
+            # check whether there is queue
+            result = self.update_queue.get_nowait()
+            
+            # if so, the butting is enabled again
+            self.btn_update.config(state=tk.NORMAL, text="Check for Updates")
+            
+            if result["status"] == "success":
+                latest_version = result["version"]
+                release_url = result["url"]
+                
+                # comparing versions
+                if latest_version > self.version:
+                    msg = f"A new version is available! ({latest_version})\n\nYou are currently using {self.version}.\nWould you like to download the update?"
+                    if messagebox.askyesno("Update Available", msg):
+                        webbrowser.open(release_url)
+                else:
+                    messagebox.showinfo("Up to date", f"You are using the latest version ({self.version}).")
+                    
+            elif result["status"] == "error":
+                messagebox.showerror("Update Error", f"Could not check for updates.\n\nError: {result['message']}")
+                
+        except queue.Empty:
+            # if the queue is empty, we check again after 100ms
+            self.root.after(100, self.process_update_queue)
+
     def load_file(self):
         filetypes = (
             ("Media files", "*.jpg *.jpeg *.png *.bmp *.mp4 *.avi *.mov *.mkv"),
@@ -268,68 +276,7 @@ class databender:
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to read image dimensions:\n{str(e)}")
 
-    def apply_effects(self, data):
-        img_h, img_w = data.shape[:2]
-        roi_mode = self.var_roi_mode.get()
-        target_data = data.copy()
-        original_roi = None
-        rx, ry, rw, rh = 0, 0, img_w, img_h
-
-        if roi_mode in ["inside", "outside"]:
-            try:
-                rx = self.var_roi_x.get()
-                ry = self.var_roi_y.get()
-                rw = int(self.var_roi_w.get()) if self.var_roi_w.get() else img_w
-                rh = int(self.var_roi_h.get()) if self.var_roi_h.get() else img_h
-
-                rw = max(1, min(rw, img_w - rx))
-                rh = max(1, min(rh, img_h - ry))
-
-                if roi_mode == "outside":
-                    original_roi = data[ry:ry+rh, rx:rx+rw].copy()
-                elif roi_mode == "inside":
-                    target_data = data[ry:ry+rh, rx:rx+rw].copy()
-
-            except ValueError:
-                messagebox.showerror("Error", "ROI coordinates must be whole numbers!")
-                return data
-
-        # applying color offset
-        target_data = color_offset(target_data, self.var_color_offset.get())
-        
-        # applying row shifting
-        if self.var_do_shift.get():
-            target_data = row_shifting(target_data, self.var_probability.get(), self.var_shift.get())
-
-        # applying chromatic aberration
-        target_data = chromatic_aberration(target_data, self.var_red.get(), self.var_green.get(), self.var_blue.get())    
-
-        # applying pixel sort
-        sort_mode = self.var_sort_mode.get()
-        if sort_mode == "lum":
-            target_data = sort_pixels(target_data, lambda pixels: np.average(pixels, axis=2) / 255, lambda lum: (lum > 2 / 6) & (lum < 4 / 6), 1)
-        elif sort_mode == "hue":
-            target_data = sort_pixels(target_data, hue, lambda h: (h > 2 / 6) & (h < 4 / 6), 1)
-            
-        # applying warp
-        warp_mode = self.var_warp_mode.get()
-        if warp_mode != "none":
-            target_data = warp(target_data, warp_mode, self.var_warp_val.get())
-
-        # placing ROI back
-        if roi_mode == "inside":
-            data[ry:ry+rh, rx:rx+rw] = target_data
-
-        elif roi_mode == "outside":
-            target_data[ry:ry+rh, rx:rx+rw] = original_roi
-            data = target_data
-
-        else:
-            data = target_data
-
-        return data
-
-    def process_video_render(self, input_path, save_path):
+    def process_video_render(self, input_path, save_path, config):
         reader = imageio.get_reader(input_path)
         meta = reader.get_meta_data()
         fps = meta["fps"]
@@ -337,7 +284,7 @@ class databender:
         try:
             total_frames = reader.count_frames()
         except:
-            total_frames = int(meta.get("duration", 0) * fps) # if imageio can't count frames (missing from header)
+            total_frames = int(meta.get("duration", 0) * fps) # if imageio can't count frames (missing from header), it tries to 
             if total_frames <= 0: total_frames = 100 # if the duration is missing from meta 
 
         writer = imageio.get_writer(save_path, fps=fps, codec="libx264", macro_block_size=None)
@@ -351,7 +298,7 @@ class databender:
             frame_count += 1
             
             data = np.array(frame, dtype=np.int32)
-            data = self.apply_effects(data)
+            data = apply_effects(data, config)
             
             final_data = (data % 256).astype(np.uint8)
             writer.append_data(final_data)
@@ -381,6 +328,34 @@ class databender:
         if not self.image_path:
             messagebox.showwarning("Notice", "Please upload a file first!")
             return
+        try:
+            roi_w = int(self.var_roi_w.get()) if self.var_roi_w.get() else 200
+            roi_h = int(self.var_roi_h.get()) if self.var_roi_h.get() else 200
+        except ValueError:
+            roi_w, roi_h = 200, 200
+
+        config = {
+            "roi_mode": self.var_roi_mode.get(),
+            "roi_x": self.var_roi_x.get(),
+            "roi_y": self.var_roi_y.get(),
+            "roi_w": roi_w,
+            "roi_h": roi_h,
+
+            "color_offset": self.var_color_offset.get(),
+
+            "do_shift": self.var_do_shift.get(),
+            "shift_prob": self.var_probability.get(),
+            "shift_max": self.var_shift.get(),
+
+            "red": self.var_red.get(),
+            "green": self.var_green.get(),
+            "blue": self.var_blue.get(),
+
+            "sort_mode": self.var_sort_mode.get(),
+
+            "warp_mode": self.var_warp_mode.get(),
+            "warp_val": self.var_warp_val.get()
+        }
 
         ext = os.path.splitext(self.image_path)[1].lower()
         is_video = ext in self.video_exts
@@ -394,7 +369,7 @@ class databender:
                         filetypes=[("MP4 Video", "*.mp4")]
                     )
                     if save_path:
-                        self.process_video_render(self.image_path, save_path)
+                        self.process_video_render(self.image_path, save_path, config)
                 else:
                     # showing the first frame edited
                     self.lbl_status.config(text="Generating frame preview...")
@@ -406,7 +381,7 @@ class databender:
                         reader.close()
                         
                         data = np.array(frame, dtype=np.int32)
-                        data = self.apply_effects(data)
+                        data = apply_effects(data, config)
                         final_data = (data % 256).astype(np.uint8)
                         imgout = Image.fromarray(final_data, "RGB")
                         imgout.show()
@@ -425,7 +400,7 @@ class databender:
                 imgin.load()
                 data = np.asarray(imgin, dtype="int32")
 
-                data = self.apply_effects(data)
+                data = apply_effects(data, config)
 
                 final_data = (data % 256).astype(np.uint8)
                 imgout = Image.fromarray(final_data, "RGB")

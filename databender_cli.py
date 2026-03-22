@@ -1,9 +1,10 @@
-from PIL import Image
-import numpy as np
 import argparse
 import os
-from typing import Callable
 import imageio
+
+from core.filters import *
+from core.processor import apply_effects
+
 
 def parse_arguments():
     # flag arguments
@@ -48,137 +49,42 @@ def parse_arguments():
 
     return args
 
-def color_offset(data, offset):
-    # color offset
-    if offset == 0:
-        return data
-    else:
-        return data + offset
+def build_config(args):
+    config = {
+        "color_offset": args.color_offset,
+        
+        "do_shift": args.do_shift,
+        "shift_prob": args.probability,
+        "shift_max": args.shift,
 
-def row_shifting(data, probability, max_shift):
-    # row shifting
-    height = data.shape[0]
-    for i in range(height):
-        if np.random.rand() < probability:
-            shift = np.random.randint(-max_shift, max_shift)
-            data[i] = np.roll(data[i], shift, axis=0)
-    return data
+        "red": args.red,
+        "green": args.green,
+        "blue": args.blue,
 
-def chromatic_aberration(data, red, green, blue):
-    # chromatic aberration
-    if red != 0:
-        data[:,:,0] = np.roll(data[:,:,0], red, axis=1)
-    if green != 0:
-        data[:,:,1] = np.roll(data[:,:,1], green, axis=1)
-    if blue != 0:
-        data[:,:,2] = np.roll(data[:,:,2], blue, axis=1)
-    else:
-        pass
+        "sort_mode": args.sort
+    }
 
-    return data
-
-def sort_pixels(data, value: Callable, condition: Callable, rotation: int = 0):
-    # https://www.reddit.com/r/pixelsorting/comments/dewpt6/pixel_sorting_in_20_lines_of_python_using_numpy/
-    pixels = np.rot90(np.array(data), rotation)
-    values = value(pixels)
-    edges = np.apply_along_axis(lambda row: np.convolve(row, [-1, 1], 'same'), 0, condition(values))
-    intervals = [np.flatnonzero(row) for row in edges]
-
-    for row, key in enumerate(values):
-        order = np.split(key, intervals[row])
-        for index, interval in enumerate(order[1:]):
-            order[index + 1] = np.argsort(interval) + intervals[row][index]
-        order[0] = range(order[0].size)
-        order = np.concatenate(order)
-
-        for channel in range(3):
-            pixels[row, :, channel] = pixels[row, order.astype('uint32'), channel]
-
-    return np.rot90(pixels, -rotation)
-
-def hue(pixels):
-    r, g, b = np.split(pixels, 3, 2)
-    return np.arctan2(np.sqrt(3) * (g - b), 2 * r - g - b)[:, :, 0]
-
-def warp(data, mode, val):
-    height = data.shape[0]
-    val = float(val)
-
-    for i in range(height):
-        if mode == "normal":
-            data[i] = np.roll(data[i], int(i/(21 - val)), axis=0)
-        elif mode == "sin":
-            data[i] = np.roll(data[i], int(val * np.sin(i / 10.0)), axis=0)
-        else: 
-            continue
-    return data
-
-def apply_effects(data, args):
-    img_h, img_w = data.shape[:2]
-    roi_mode = "none"
-    target_data = data.copy()
-    original_roi = None
-    rx, ry, rw, rh = 0, 0, img_w, img_h
-
+    # ROI
     if args.roi:
-        roi_mode = args.roi[0]
-        try:
-            rx = int(args.roi[1])
-            ry = int(args.roi[2])
-
-            rw = int(args.roi[3]) if len(args.roi) > 3 and args.roi[3] else img_w
-            rh = int(args.roi[4]) if len(args.roi) > 4 and args.roi[4] else img_h
-
-            rw = max(1, min(rw, img_w - rx))
-            rh = max(1, min(rh, img_h - ry))
-
-            if roi_mode == "outside":
-                original_roi = data[ry:ry+rh, rx:rx+rw].copy()
-
-            elif roi_mode == "inside":
-                target_data = data[ry:ry+rh, rx:rx+rw].copy()
-
-        except ValueError:
-            print("Error", "ROI coordinates must be whole numbers!")
-            return data
-
-    # applying color offset
-    target_data = color_offset(target_data, args.color_offset)
-
-    # applying row shifting
-    if args.do_shift:
-        target_data = row_shifting(target_data, args.probability, args.shift)
-            
-    # applying chromatic aberration
-    target_data = chromatic_aberration(target_data, args.red, args.green, args.blue)    
-
-    # applying pixel sort
-    if args.sort == "lum":
-        target_data = sort_pixels(target_data,
-                lambda pixels: np.average(pixels, axis=2) / 255,
-                lambda lum: (lum > 2 / 6) & (lum < 4 / 6), 1)
-                
-    elif args.sort == "hue":
-        target_data = sort_pixels(target_data, hue, lambda h: (h > 2 / 6) & (h < 4 / 6), 1)
-
-    # applying warp
-    if args.warp:
-        target_data = warp(target_data,args.warp[0], args.warp[1])
-
-    # placing ROI back
-    if roi_mode == "inside":
-        data[ry:ry+rh, rx:rx+rw] = target_data
-
-    elif roi_mode == "outside":
-        target_data[ry:ry+rh, rx:rx+rw] = original_roi
-        data = target_data
-
+        config["roi_mode"] = args.roi[0]
+        config["roi_x"] = int(args.roi[1])
+        config["roi_y"] = int(args.roi[2])
+        config["roi_w"] = int(args.roi[3])
+        config["roi_h"] = int(args.roi[4])
     else:
-        data = target_data
+        config["roi_mode"] = "none"
 
-    return data
+    # warp
+    if args.warp:
+        config["warp_mode"] = args.warp[0]
+        config["warp_val"] = float(args.warp[1])
+    else:
+        config["warp_mode"] = "none"
+        config["warp_val"] = 0.0
 
-def process_video(input_path, output_path, args):
+    return config
+
+def process_video(input_path, output_path, config):
     reader = imageio.get_reader(input_path)
     meta = reader.get_meta_data()
     fps = meta["fps"]
@@ -203,7 +109,7 @@ def process_video(input_path, output_path, args):
             print(f"Processing frame: {frame_count}", end="\r")
 
         data = np.array(frame, dtype=np.int32)
-        data = apply_effects(data, args)
+        data = apply_effects(data, config)
 
         final_data = (data % 256).astype(np.uint8)
         writer.append_data(final_data)
@@ -230,6 +136,8 @@ def get_unique_filename(path):
 
 def main():
     args = parse_arguments()
+    config = build_config(args)
+    print(config)
 
     if args.out_dir:
         os.makedirs(args.out_dir, exist_ok=True)
@@ -250,7 +158,7 @@ def main():
             
             out_path = get_unique_filename(out_path)
 
-            process_video(file_path, out_path, args)
+            process_video(file_path, out_path, config)
 
         else:
             # --- PROCESSING IMAGE ---
@@ -262,7 +170,7 @@ def main():
                 imgin.load()
                 data = np.asarray(imgin, dtype="int32")
 
-                data = apply_effects(data, args)
+                data = apply_effects(data, config)
 
                 # numpy array to image
                 final_data = (data % 256).astype(np.uint8)
