@@ -233,6 +233,7 @@ class databender:
 
     def load_file(self):
         filetypes = (
+            ("Media files", "*.jpg *.jpeg *.png *.bmp *.mp4 *.avi *.mov *.mkv"),
             ("Image files", "*.jpg *.jpeg *.png *.bmp"),
             ("Video files", "*.mp4 *.avi *.mov *.mkv"),
             ("Every file", "*.*")
