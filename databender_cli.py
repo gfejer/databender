@@ -137,7 +137,6 @@ def get_unique_filename(path):
 def main():
     args = parse_arguments()
     config = build_config(args)
-    print(config)
 
     if args.out_dir:
         os.makedirs(args.out_dir, exist_ok=True)
