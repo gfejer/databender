@@ -168,20 +168,23 @@ class databender:
 
         displace_frame.columnconfigure(1, weight=1)
 
-        ttk.Label(displace_frame, text="Number of Blocks:").grid(row=0, column=0, sticky=tk.W)
+        self.var_fixed_mode = tk.BooleanVar(value=False)
+        ttk.Checkbutton(displace_frame, text="Fix Position", variable=self.var_fixed_mode).grid(row=0, column=0, sticky=tk.W)
+
+        ttk.Label(displace_frame, text="Number of Blocks:").grid(row=1, column=0, sticky=tk.W)
         self.var_num_blocks = tk.IntVar(value=0)
-        ttk.Scale(displace_frame, from_=0, to=500, variable=self.var_num_blocks, orient=tk.HORIZONTAL, command=lambda v: self.var_num_blocks.set(int(float(v)))).grid(row=0, column=1, sticky=tk.EW, padx=5)
-        ttk.Entry(displace_frame, textvariable=self.var_num_blocks, width=3).grid(row=0, column=2, sticky=tk.W)
+        ttk.Scale(displace_frame, from_=0, to=500, variable=self.var_num_blocks, orient=tk.HORIZONTAL, command=lambda v: self.var_num_blocks.set(int(float(v)))).grid(row=1, column=1, sticky=tk.EW, padx=5)
+        ttk.Entry(displace_frame, textvariable=self.var_num_blocks, width=3).grid(row=1, column=2, sticky=tk.W)
 
-        ttk.Label(displace_frame, text="Max Block Size:").grid(row=1, column=0, sticky=tk.W)
+        ttk.Label(displace_frame, text="Max Block Size:").grid(row=2, column=0, sticky=tk.W)
         self.var_max_block_size = tk.IntVar(value=10)
-        ttk.Scale(displace_frame, from_=10, to=500, variable=self.var_max_block_size, orient=tk.HORIZONTAL, command=lambda v: self.var_max_block_size.set(int(float(v)))).grid(row=1, column=1, sticky=tk.EW, padx=5)
-        ttk.Entry(displace_frame, textvariable=self.var_max_block_size, width=3).grid(row=1, column=2, sticky=tk.W)
+        ttk.Scale(displace_frame, from_=10, to=500, variable=self.var_max_block_size, orient=tk.HORIZONTAL, command=lambda v: self.var_max_block_size.set(int(float(v)))).grid(row=2, column=1, sticky=tk.EW, padx=5)
+        ttk.Entry(displace_frame, textvariable=self.var_max_block_size, width=3).grid(row=2, column=2, sticky=tk.W)
 
-        ttk.Label(displace_frame, text="Max Shift Amount").grid(row=2, column=0, sticky=tk.W)
+        ttk.Label(displace_frame, text="Max Shift Amount").grid(row=3, column=0, sticky=tk.W)
         self.var_shift_amount = tk.IntVar(value=0)
-        ttk.Scale(displace_frame, from_=0, to=500, variable=self.var_shift_amount, orient=tk.HORIZONTAL, command=lambda v: self.var_shift_amount.set(int(float(v)))).grid(row=2, column=1, sticky=tk.EW, padx=5)
-        ttk.Entry(displace_frame, textvariable=self.var_shift_amount, width=3).grid(row=2, column=2, sticky=tk.W)
+        ttk.Scale(displace_frame, from_=0, to=500, variable=self.var_shift_amount, orient=tk.HORIZONTAL, command=lambda v: self.var_shift_amount.set(int(float(v)))).grid(row=3, column=1, sticky=tk.EW, padx=5)
+        ttk.Entry(displace_frame, textvariable=self.var_shift_amount, width=3).grid(row=3, column=2, sticky=tk.W)
 
         row3_frame = ttk.Frame(main_frame)
         row3_frame.pack(fill=tk.X, pady=5)
@@ -323,7 +326,7 @@ class databender:
         try:
             total_frames = reader.count_frames()
         except:
-            total_frames = int(meta.get("duration", 0) * fps) # if imageio can't count frames (missing from header), it tries to 
+            total_frames = int(meta.get("duration", 0) * fps) # if imageio can't count frames (missing from header), we try to calculate it
             if total_frames <= 0: total_frames = 100 # if the duration is missing from meta 
 
         writer = imageio.get_writer(save_path, fps=fps, codec="libx264", macro_block_size=None)
@@ -399,7 +402,8 @@ class databender:
 
             "num_blocks": self.var_num_blocks.get(), 
             "max_block_size": self.var_max_block_size.get(),
-            "shift_amount": self.var_shift_amount.get()
+            "shift_amount": self.var_shift_amount.get(),
+            "fixed_mode":self.var_fixed_mode.get()
         }
 
         ext = os.path.splitext(self.image_path)[1].lower()
