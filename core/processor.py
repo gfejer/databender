@@ -49,7 +49,7 @@ def apply_effects(data, config):
         target_data = warp(target_data, warp_mode, config.get("warp_val", 0.0))
 
     # applying block displacement
-    target_data = block_displacement(target_data, config.get("num_blocks", 0), config.get("max_block_size",0), config.get("shift_amount",0))
+    target_data = block_displacement(target_data, config.get("num_blocks", 0), config.get("max_block_size",0), config.get("shift_amount",0), config.get("fixed_mode", False))
 
     # placing the ROI back
     if roi_mode == "inside":
