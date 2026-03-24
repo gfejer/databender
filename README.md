@@ -49,6 +49,8 @@ python databender_cli.py
 - **Chromatic Aberration:** Independent horizontal displacement of the Red, Green, and Blue color channels.
 - **Pixel Sorting (lum / hue):** Reorders pixels within specific intervals based on their mathematical properties.
 - **Warping (normal / sin):** Distorts the geometry of the image/video by shifting rows based on mathematical functions.
+- **Block Displacement:** Simulates digital corruption by randomly shifting rectangular image segments across the frame.
+- **Channel Swapping:** Enables the reordering of the Red, Green, and Blue color channels in all possible combinations to create surreal looks.
 
 ## Example images
 
