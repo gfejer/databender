@@ -27,11 +27,14 @@ def parse_arguments():
     aberration_group.add_argument("-g", "--green", type=int, default=0, help=("Horizontal shift of the green channel. (Default: 0)"))
     aberration_group.add_argument("-b", "--blue", type=int, default=0, help=("Horizontal shift of the blue channel. (Default: 0)"))
 
+    channel_swap_group = parser.add_argument_group("Channel Swapping")
+    channel_swap_group.add_argument("-cs", "--channel-swap", type=str, help="Swaps the color channels. (options: RBG, BGR, BRG, GRB, GBR)", metavar="MODE")
+
     sorting_group = parser.add_argument_group("Pixel Sorting")
-    sorting_group.add_argument("--sort", default=None, help="Sort pixels based on luminosity or hue (lum/hue).", metavar=("MODE"))
+    sorting_group.add_argument("--sort", default=None, help="Sort pixels based on luminosity or hue (options: lum, hue).", metavar=("MODE"))
 
     warp_group = parser.add_argument_group("Warping")
-    warp_group.add_argument("--warp", nargs=2, help="Warping mode (normal/sin) and intensity (for normal mode 1-20).", metavar=("MODE", "VAL"))
+    warp_group.add_argument("--warp", nargs=2, help="Warping mode (options: normal, sin) and intensity (for normal mode 1-20).", metavar=("MODE", "VAL"))
 
     parser.add_argument("-o", "--out-dir", type=str, required=False, help="Output directory to save files. If omitted, images/video will just be displayed.", metavar="DIR")
 
@@ -60,6 +63,8 @@ def build_config(args):
         "red": args.red,
         "green": args.green,
         "blue": args.blue,
+
+        "cswap_mode": args.channel_swap,
 
         "sort_mode": args.sort
     }
