@@ -57,19 +57,19 @@ def chromatic_aberration(data, red, green, blue):
 
 def channel_swapping(data, mode):
     # channel swapping
-    if mode == "BGR":
+    if mode.lower() == "bgr":
         data = data[:,:,[2, 1, 0]]
 
-    elif mode == "BRG":
+    elif mode.lower() == "brg":
         data = data[:,:,[2, 0, 1]]
 
-    elif mode == "GRB":
+    elif mode.lower() == "grb":
         data = data[:,:,[1, 0, 2]]
     
-    elif mode == "GBR":
+    elif mode.lower() == "gbr":
         data = data[:,:,[1, 2, 0]]
     
-    elif mode == "RBG":
+    elif mode.lower() == "rbg":
         data = data[:,:,[0, 2, 1]]
     else:
         pass
@@ -89,7 +89,7 @@ def warp(data, mode, val):
             continue
     return data
 
-def block_displacement(data, num_blocks, max_block_size, shift_amount):
+def block_displacement(data, num_blocks, max_block_size, shift_amount, fixed_mode):
     # block displacement
     height, width = data.shape[:2]
     
@@ -101,6 +101,9 @@ def block_displacement(data, num_blocks, max_block_size, shift_amount):
     
     if safe_max_size <= 10:
         return data
+
+    if fixed_mode:
+        np.random.seed(24)
 
     for i in range(num_blocks):
         bw = np.random.randint(10, safe_max_size)
@@ -117,5 +120,8 @@ def block_displacement(data, num_blocks, max_block_size, shift_amount):
 
         block = data[src_y:src_y+bh, src_x:src_x+bw].copy()
         data[dst_y:dst_y+bh, dst_x:dst_x+bw] = block
+
+    if fixed_mode:
+        np.random.seed()
 
     return data
