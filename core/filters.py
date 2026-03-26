@@ -89,25 +89,22 @@ def warp(data, mode, val):
             continue
     return data
 
-def block_displacement(data, num_blocks, max_block_size, shift_amount, fixed_mode):
+def block_displacement(data, num_blocks, min_block_size, max_block_size, shift_amount, fixed_mode):
     # block displacement
     height, width = data.shape[:2]
     
-    if shift_amount <= 0 or max_block_size <= 10:
+    if shift_amount <= 0:
         return data
 
     # to avoid the block being bigger than the image
     safe_max_size = min(max_block_size, width - 1, height - 1)
-    
-    if safe_max_size <= 10:
-        return data
 
     if fixed_mode:
         np.random.seed(24)
 
     for i in range(num_blocks):
-        bw = np.random.randint(10, safe_max_size)
-        bh = np.random.randint(10, safe_max_size)
+        bw = np.random.randint(min_block_size, safe_max_size)
+        bh = np.random.randint(min_block_size, safe_max_size)
 
         src_x = np.random.randint(0, width - bw)
         src_y = np.random.randint(0, height - bh)
