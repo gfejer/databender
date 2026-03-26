@@ -3,3 +3,4 @@ Pillow
 imageio
 imageio-ffmpeg
 certifi
+customtkinter
