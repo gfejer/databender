@@ -38,6 +38,7 @@ class databender:
 
         self.image_path = None
         self.video_exts = [".mp4", ".avi", ".mov", ".mkv"]
+        self.stop_processing = False
 
         self.create_widgets()
 
@@ -84,7 +85,7 @@ class databender:
         # ==========================================
         #               3. Tab View
         # ==========================================
-        self.tabview = ctk.CTkTabview(self.root)
+        self.tabview = ctk.CTkTabview(self.root, fg_color="transparent")
         self.tabview.pack(side="top", fill="both", expand=True, padx=10, pady=5)
 
         tab_gen = self.tabview.add("General & Mask")
@@ -202,7 +203,7 @@ class databender:
 
         ctk.CTkLabel(displace_frame, text="Max Size (px):").grid(row=3, column=0, sticky="w", padx=10, pady=2)
         self.var_max_block_size = tk.IntVar(value=0)
-        ctk.CTkSlider(displace_frame, from_=10, to=500, variable=self.var_max_block_size, command=lambda v: self.var_max_block_size.set(int(float(v)))).grid(row=3, column=1, sticky="ew", padx=5)
+        ctk.CTkSlider(displace_frame, from_=0, to=500, variable=self.var_max_block_size, command=lambda v: self.var_max_block_size.set(int(float(v)))).grid(row=3, column=1, sticky="ew", padx=5)
         ctk.CTkEntry(displace_frame, textvariable=self.var_max_block_size, width=40).grid(row=3, column=2, sticky="w", padx=(0, 10))
         
         ctk.CTkLabel(displace_frame, text="Max Shift (px):").grid(row=4, column=0, sticky="w", padx=10, pady=(2, 10))
@@ -362,6 +363,7 @@ class databender:
                 messagebox.showerror("Error", f"Failed to read image dimensions:\n{str(e)}")
 
     def process_video_render(self, input_path, save_path, config):
+        self.stop_processing = False
         reader = imageio.get_reader(input_path)
         meta = reader.get_meta_data()
         fps = meta["fps"]
@@ -376,24 +378,28 @@ class databender:
 
         self.progress_bar.pack(fill="x", expand=True, pady=5)
         self.btn_preview.configure(state="disabled")
-        self.btn_save.configure(state="disabled")
+        self.btn_save.configure(text="Stop", fg_color="red", hover_color="#8B1A1A")
 
         frame_count = 0
         for frame in reader:
-            frame_count += 1
-            
-            data = np.array(frame, dtype=np.int32)
-            data = apply_effects(data, config)
-            
-            final_data = (data % 256).astype(np.uint8)
-            writer.append_data(final_data)
-
-            if total_frames > 0:
-                progress = min((frame_count / total_frames) * 100, 100)
-                self.progress_var.set(progress)
-                self.lbl_status.configure(text=f"Rendering video... {frame_count} / {total_frames} frames")
+            if self.stop_processing:
+                self.btn_save.configure(state="disabled")
+                break
             else:
-                self.lbl_status.configure(text=f"Rendering video... {frame_count} frames") 
+                frame_count += 1
+                
+                data = np.array(frame, dtype=np.int32)
+                data = apply_effects(data, config)
+                
+                final_data = (data % 256).astype(np.uint8)
+                writer.append_data(final_data)
+
+                if total_frames > 0:
+                    progress = min((frame_count / total_frames), 1.0)
+                    self.progress_bar.set(progress)
+                    self.lbl_status.configure(text=f"Rendering video... {frame_count} / {total_frames} frames")
+                else:
+                    self.lbl_status.configure(text=f"Rendering video... {frame_count} frames") 
             self.root.update()
 
         reader.close()
@@ -402,12 +408,23 @@ class databender:
         self.progress_bar.pack_forget()
         self.lbl_status.configure(text="")
         self.btn_preview.configure(state="normal")
-        self.btn_save.configure(state="normal")
+        self.btn_save.configure(text="Save as", fg_color=ctk.ThemeManager.theme["CTkButton"]["fg_color"], hover_color=ctk.ThemeManager.theme["CTkButton"]["hover_color"], state="normal")
         self.progress_var.set(0)
 
-        messagebox.showinfo("Success", f"Video successfully saved:\n{save_path}")
+        if self.stop_processing:
+            try:
+                os.remove(save_path)
+            except Exception as e:
+                print(f"Could not remove file: {e}")
+            messagebox.showinfo("Stopped", f"Video rendering stopped.")
+        else:
+            messagebox.showinfo("Success", f"Video successfully saved:\n{save_path}")
 
     def process(self, save=False):
+        if self.btn_save.cget("text") == "Stop":
+            self.stop_processing = True
+            return
+
         if not self.image_path:
             messagebox.showwarning("Notice", "Please upload a file first!")
             return
