@@ -22,13 +22,20 @@ def parse_arguments():
     shift_group.add_argument("-p", "--probability", type=float, required=False, default=None, help="Probability of a row being shifted (0.0 - 1.0). (Default: 0.2)")
     shift_group.add_argument("-x", "--shift", type=int, default=None, help="Maximum horizontal shift in pixels (Default: 50)")
 
+    block_group = parser.add_argument_group("Block Displacement (to achieve the effect you must use all flags (except --fix))")
+    block_group.add_argument("--fix", action="store_true", help="Keep block coordinates static across all frames (useful for animations/videos).")
+    block_group.add_argument("--num", type=int, default=0, help="Total number of glitch blocks to generate and displace.")
+    block_group.add_argument("--min-size", type=int, default=0, help="Minimum size of the displaced blocks (in pixels).")
+    block_group.add_argument("--max-size", type=int, default=0, help="Maximum size of the displaced blocks (in pixels).")
+    block_group.add_argument("--max-shift", type=int, default=0, help="Maximum distance (in pixels) a block can be shifted from its origin.")
+
     aberration_group = parser.add_argument_group("Chromatic Aberration")
     aberration_group.add_argument("-r", "--red", type=int, default=0, help=("Horizontal shift of the red channel.  (Default: 0)"))
     aberration_group.add_argument("-g", "--green", type=int, default=0, help=("Horizontal shift of the green channel. (Default: 0)"))
     aberration_group.add_argument("-b", "--blue", type=int, default=0, help=("Horizontal shift of the blue channel. (Default: 0)"))
 
     channel_swap_group = parser.add_argument_group("Channel Swapping")
-    channel_swap_group.add_argument("-cs", "--channel-swap", type=str, help="Swaps the color channels. (options: RBG, BGR, BRG, GRB, GBR)", metavar="MODE")
+    channel_swap_group.add_argument("-cs", "--channel-swap", type=str, default="none", help="Swaps the color channels. (options: RBG, BGR, BRG, GRB, GBR)", metavar="MODE")
 
     sorting_group = parser.add_argument_group("Pixel Sorting")
     sorting_group.add_argument("--sort", default=None, help="Sort pixels based on luminosity or hue (options: lum, hue).", metavar=("MODE"))
@@ -66,7 +73,13 @@ def build_config(args):
 
         "cswap_mode": args.channel_swap,
 
-        "sort_mode": args.sort
+        "sort_mode": args.sort,
+
+        "num_blocks": args.num,
+        "min_block_size": args.min_size, 
+        "max_block_size": args.max_size,
+        "shift_amount": args.max_shift,
+        "fixed_mode": args.fix
     }
 
     # ROI
