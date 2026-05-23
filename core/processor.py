@@ -22,6 +22,12 @@ def apply_effects(data, config):
         elif roi_mode == "inside":
             target_data = data[ry:ry+rh, rx:rx+rw].copy()
 
+    # applying flipping
+    if config.get("h_flip", False):
+        target_data = h_flip(target_data)
+    if config.get("v_flip", False):
+        target_data = v_flip(target_data)
+
     # applying pixel sort
     sort_mode = config.get("sort_mode", "none")
     if sort_mode == "lum":
@@ -49,7 +55,23 @@ def apply_effects(data, config):
         target_data = warp(target_data, warp_mode, config.get("warp_val", 0.0))
 
     # applying block displacement
-    target_data = block_displacement(target_data, config.get("num_blocks", 0), config.get("min_block_size", 0), config.get("max_block_size",0), config.get("shift_amount",0), config.get("fixed_mode", False))
+    if config.get("do_blocks", False):
+        target_data = block_displacement(target_data, config.get("num_blocks", 0), config.get("min_block_size", 0), config.get("max_block_size",0), config.get("shift_amount",0), config.get("fixed_mode", False))
+
+    # applying pixelation
+    pixel_amount = config.get("pixelation_amount", 0)
+    if pixel_amount > 1:
+        target_data = pixelation(target_data, pixel_amount)
+
+    # applying xor glitch
+    xor_value = config.get("xor_glitch_value", 0)
+    if xor_value > 0:
+        target_data = xor_glitch(target_data, xor_value)
+
+    # applying jpeg compression
+    comp_value = config.get("compression_amount", 0)
+    if comp_value > 0:
+        target_data = jpeg_compression(target_data, comp_value)
 
     # placing the ROI back
     if roi_mode == "inside":

@@ -1,7 +1,7 @@
 import numpy as np
 from PIL import Image
 from typing import Callable
-
+import io
 
 def sort_pixels(data, value: Callable, condition: Callable, rotation: int = 0):
     # https://www.reddit.com/r/pixelsorting/comments/dewpt6/pixel_sorting_in_20_lines_of_python_using_numpy/
@@ -122,3 +122,61 @@ def block_displacement(data, num_blocks, min_block_size, max_block_size, shift_a
         np.random.seed()
 
     return data
+
+def pixelation(data, amount):
+    # pixelation
+    if amount == 0:
+        return data
+    
+    normalized = (amount - 1) / 99.0
+    factor = 1 + 99 * (normalized ** 3)
+    
+    height, width = data.shape[:2]
+
+    small_h = max(1, int(height/factor))
+    small_w = max(1, int(width/factor))
+    
+    img = Image.fromarray(data.astype(np.uint8))
+    small_img = img.resize((small_w, small_h), Image.Resampling.NEAREST)
+    final_img = small_img.resize((width, height), Image.Resampling.NEAREST)
+
+    return np.array(final_img, dtype=data.dtype)
+
+def xor_glitch(data, xor_value):
+    # xor glitch
+
+    if xor_value == 0:
+        return data
+    
+    safe_data = np.clip(data, 0, 255).astype(np.uint8)
+    glitched = np.bitwise_xor(safe_data, xor_value)
+    
+    return glitched.astype(data.dtype)
+
+def h_flip(data):
+    # horizontal flipping
+    data = np.fliplr(data)
+    return data
+
+def v_flip(data):
+    # vertical flipping
+    data = np.flipud(data)
+    return data
+
+def jpeg_compression(data, amount):
+    # jpeg compression
+    if amount <= 0:
+        return data
+
+    normalized_inverse = (100 - amount) / 100.0
+    quality = max(1, int(100 * (0.01 ** (amount / 100.0))))
+    
+    safe_data = np.clip(data, 0, 255).astype(np.uint8)
+    img = Image.fromarray(safe_data)
+
+    buffer = io.BytesIO()
+    img.save(buffer, format="JPEG", quality=quality)
+    buffer.seek(0)
+    compressed_img = Image.open(buffer)
+
+    return np.array(compressed_img, dtype=data.dtype)
