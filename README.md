@@ -17,7 +17,7 @@ macOS might flag this application as an unrecognized or dangerous file. To open 
 
 > [!IMPORTANT]
 > **Note for Windows Users:**  
-Because this application is packaged using PyInstaller into a single executable, some antivirus software (like Windows Defender) might falsely flag it as a virus. This is a known **"false positive"** issue with Python packaging tools. You can safely tell your antivirus to allow the file, or inspect the open-source code and run it via Python directly!
+Because this application is packaged using PyInstaller into a single executable, some antivirus software (like Windows Defender) might falsely flag it as a virus. This is a known **"false positive"** issue with Python packaging tools. You can safely tell your antivirus to allow the file, or inspect the code and run it via Python directly!
 
 ### CLI Script
 If you want to run the script manually:
