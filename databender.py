@@ -25,15 +25,15 @@ from core.processor import apply_effects
 
 class databender:
     def __init__(self, root):
-        self.version = "v1.3.3"
+        self.version = "v1.3.4"
         self.repo_url = "gfejer/databender"
         self.update_queue = queue.Queue()
 
         self.root = root
         self.root.title(f"databender-{self.version}")
 
-        self.root.minsize(550, 600)
-        self.root.geometry("550x600")
+        self.root.minsize(550, 700)
+        self.root.geometry("550x700")
         self.root.resizable(True, True)
 
         self.image_path = None
@@ -43,6 +43,7 @@ class databender:
         self.create_widgets()
 
     def create_widgets(self):
+        # ctk.set_default_color_theme("theme.json")
         # ==========================================
         #               1. Top Frame
         # ==========================================
@@ -88,12 +89,13 @@ class databender:
         self.tabview = ctk.CTkTabview(self.root, fg_color="transparent")
         self.tabview.pack(side="top", fill="both", expand=True, padx=10, pady=5)
 
-        tab_gen = self.tabview.add("General & Mask")
-        tab_disp = self.tabview.add("Displacement")
-        tab_color = self.tabview.add("Advanced (the cool stuff)")
+        tab_gen = self.tabview.add("General")
+        tab_col = self.tabview.add("Colors")
+        tab_dist = self.tabview.add("Distortion")
+        tab_artif = self.tabview.add("Artifacts")
 
         # ------------------------------------------
-        #           TAB 1: General & Mask
+        #               TAB 1: General
         # ------------------------------------------
         # Info
         info_title_lbl = ctk.CTkLabel(tab_gen, text="Info", font=ctk.CTkFont(weight="bold"))
@@ -144,11 +146,28 @@ class databender:
         self.var_roi_h = tk.StringVar(value="200")
         ctk.CTkEntry(roi_frame, textvariable=self.var_roi_h, width=60).grid(row=2, column=4, sticky="w", pady=(5, 10))
 
+        # Flips
+        flip_title_lbl = ctk.CTkLabel(tab_gen, text="Flipping (horizontal/vertical)", font=ctk.CTkFont(weight="bold"))
+        flip_title_lbl.pack(anchor="w", padx=5, pady=(5, 0))
+
+        flip_frame = ctk.CTkFrame(tab_gen, border_width=2, border_color="#555555", corner_radius=6)
+        flip_frame.pack(fill="x", pady=(0, 10))
+
+        flip_frame.columnconfigure(1, weight=1)
+
+        self.var_do_h_flip = tk.BooleanVar(value=False)
+        self.var_do_v_flip = tk.BooleanVar(value=False)
+        ctk.CTkCheckBox(flip_frame, text="Horizontal", variable=self.var_do_h_flip, checkbox_width=20, checkbox_height=20, corner_radius=6, border_width=2).grid(row=0, column=0, columnspan=2, sticky="w", padx=10, pady=(10, 5))
+        ctk.CTkCheckBox(flip_frame, text="Vertical", variable=self.var_do_v_flip, checkbox_width=20, checkbox_height=20, corner_radius=6, border_width=2).grid(row=1, column=0, columnspan=2, sticky="w", padx=10, pady=(0, 10))
+        
+        # ------------------------------------------
+        #               TAB 2: Colors
+        # ------------------------------------------
         # Color Manipulation
-        color_offset_title_lbl = ctk.CTkLabel(tab_gen, text="Color Manipulation", font=ctk.CTkFont(weight="bold"))
+        color_offset_title_lbl = ctk.CTkLabel(tab_col, text="Color Manipulation", font=ctk.CTkFont(weight="bold"))
         color_offset_title_lbl.pack(anchor="w", padx=5, pady=(5, 0))
 
-        color_frame = ctk.CTkFrame(tab_gen, border_width=2, border_color="#555555", corner_radius=6)
+        color_frame = ctk.CTkFrame(tab_col, border_width=2, border_color="#555555", corner_radius=6)
         color_frame.pack(fill="x", pady=(0, 10))
 
         color_frame.columnconfigure(1, weight=1)
@@ -158,14 +177,58 @@ class databender:
         ctk.CTkSlider(color_frame, from_=0, to=255, variable=self.var_color_offset, command=lambda v: self.var_color_offset.set(int(float(v)))).grid(row=0, column=1, sticky="ew", padx=10)
         ctk.CTkEntry(color_frame, textvariable=self.var_color_offset, width=50).grid(row=0, column=2, sticky="w", padx=10)
 
+        # Chromatic Aberration
+        aberration_title_lbl = ctk.CTkLabel(tab_col, text="Chromatic Aberration", font=ctk.CTkFont(weight="bold"))
+        aberration_title_lbl.pack(anchor="w", padx=5, pady=(5, 0))
+        
+        aberration_frame = ctk.CTkFrame(tab_col, border_width=2, border_color="#555555", corner_radius=6)
+        aberration_frame.pack(fill="x", pady=(0, 10))
+        
+        ctk.CTkLabel(aberration_frame, text="Red Shift (px):").grid(row=0, column=0, sticky="w", padx=10, pady=(10, 5))
+        self.var_red = tk.IntVar(value=0)
+        ctk.CTkEntry(aberration_frame, textvariable=self.var_red, width=60).grid(row=0, column=1, sticky="w", pady=(10, 5))
+        
+        ctk.CTkLabel(aberration_frame, text="Green Shift (px):").grid(row=1, column=0, sticky="w", padx=10, pady=5)
+        self.var_green = tk.IntVar(value=0)
+        ctk.CTkEntry(aberration_frame, textvariable=self.var_green, width=60).grid(row=1, column=1, sticky="w", pady=5)
+        
+        ctk.CTkLabel(aberration_frame, text="Blue Shift (px):").grid(row=2, column=0, sticky="w", padx=10, pady=(5, 10))
+        self.var_blue = tk.IntVar(value=0)
+        ctk.CTkEntry(aberration_frame, textvariable=self.var_blue, width=60).grid(row=2, column=1, sticky="w", pady=(5, 10))
+
+        # XOR Glitch
+        xor_title_lbl = ctk.CTkLabel(tab_col, text="XOR Glitch", font=ctk.CTkFont(weight="bold"))
+        xor_title_lbl.pack(anchor="w", padx=5, pady=(5, 0))
+
+        xor_frame = ctk.CTkFrame(tab_col, border_width=2, border_color="#555555", corner_radius=6)
+        xor_frame.pack(fill="x", pady=(0, 10))
+
+        xor_frame.columnconfigure(1, weight=1)
+
+        ctk.CTkLabel(xor_frame, text="Value:").grid(row=0, column=0, sticky="e", padx=10, pady=10)
+        self.var_xor_glitch_value = tk.IntVar(value=0)
+        ctk.CTkSlider(xor_frame, from_=0, to=255, variable=self.var_xor_glitch_value, command=lambda v: self.var_xor_glitch_value.set(int(float(v)))).grid(row=0, column=1, sticky="ew", padx=10)
+        ctk.CTkEntry(xor_frame, textvariable=self.var_xor_glitch_value, width=50).grid(row=0, column=2, sticky="w", padx=10)
+
+        # Channel Swapping
+        swap_title_lbl = ctk.CTkLabel(tab_col, text="Channel Swapping", font=ctk.CTkFont(weight="bold"))
+        swap_title_lbl.pack(anchor="w", padx=5, pady=(0, 2))
+        
+        swapping_frame = ctk.CTkFrame(tab_col, border_width=2, border_color="#555555", corner_radius=6)
+        swapping_frame.pack(fill="x")
+        
+        ctk.CTkLabel(swapping_frame, text="Mode:").grid(row=0, column=0, sticky="w", padx=10, pady=10)
+        self.var_channel_swapping_mode = tk.StringVar(value="none")
+        ctk.CTkComboBox(swapping_frame, variable=self.var_channel_swapping_mode, values=["none", "RBG", "GRB", "GBR", "BRG", "BGR"], state="readonly", width=100).grid(row=0, column=1, sticky="w", padx=5, pady=10)
+
         # ------------------------------------------
-        #             TAB 2: Displacement
+        #              TAB 3: Distortion
         # ------------------------------------------
         # Row Shifting
-        shift_title_lbl = ctk.CTkLabel(tab_disp, text="Row Shifting", font=ctk.CTkFont(weight="bold"))
+        shift_title_lbl = ctk.CTkLabel(tab_dist, text="Row Shifting", font=ctk.CTkFont(weight="bold"))
         shift_title_lbl.pack(anchor="w", padx=5, pady=(5, 0))
 
-        shift_frame = ctk.CTkFrame(tab_disp, border_width=2, border_color="#555555", corner_radius=6)
+        shift_frame = ctk.CTkFrame(tab_dist, border_width=2, border_color="#555555", corner_radius=6)
         shift_frame.pack(fill="x", pady=(0, 10))
 
         self.var_do_shift = tk.BooleanVar(value=False)
@@ -180,16 +243,16 @@ class databender:
         ctk.CTkEntry(shift_frame, textvariable=self.var_shift, width=60).grid(row=2, column=1, sticky="w", padx=5, pady=(5, 10))
 
         # Block Displacement
-        title_displace_lbl = ctk.CTkLabel(tab_disp, text="Block Displacement", font=ctk.CTkFont(weight="bold"))
+        title_displace_lbl = ctk.CTkLabel(tab_dist, text="Block Displacement", font=ctk.CTkFont(weight="bold"))
         title_displace_lbl.pack(anchor="w", padx=5, pady=(5, 0))
 
-        displace_frame = ctk.CTkFrame(tab_disp, border_width=2, border_color="#555555", corner_radius=6)
+        displace_frame = ctk.CTkFrame(tab_dist, border_width=2, border_color="#555555", corner_radius=6)
         displace_frame.pack(fill="x", pady=(0, 10))
 
         displace_frame.columnconfigure(1, weight=1)
         
-        self.var_fixed_mode = tk.BooleanVar(value=False)
-        ctk.CTkCheckBox(displace_frame, text="Fix Position (Video)", variable=self.var_fixed_mode, checkbox_width=20, checkbox_height=20, corner_radius=6, border_width=2).grid(row=0, column=0, columnspan=3, sticky="w", padx=10, pady=(10, 5))
+        self.var_do_blocks = tk.BooleanVar(value=False)
+        ctk.CTkCheckBox(displace_frame, text="Enable", variable=self.var_do_blocks, checkbox_width=20, checkbox_height=20, corner_radius=6, border_width=2).grid(row=0, column=0, columnspan=3, sticky="w", padx=10, pady=(10, 5))
         
         ctk.CTkLabel(displace_frame, text="Blocks:").grid(row=1, column=0, sticky="w", padx=10, pady=2)
         self.var_num_blocks = tk.IntVar(value=0)
@@ -211,33 +274,14 @@ class databender:
         ctk.CTkSlider(displace_frame, from_=0, to=500, variable=self.var_shift_amount, command=lambda v: self.var_shift_amount.set(int(float(v)))).grid(row=4, column=1, sticky="ew", padx=5, pady=(0, 10))
         ctk.CTkEntry(displace_frame, textvariable=self.var_shift_amount, width=40).grid(row=4, column=2, sticky="w", padx=(0, 10), pady=(0, 10))
 
-        # ------------------------------------------
-        #      TAB 3: Advanced (the cool stuff)
-        # ------------------------------------------
-        # Chromatic Aberration
-        aberration_title_lbl = ctk.CTkLabel(tab_color, text="Chromatic Aberration", font=ctk.CTkFont(weight="bold"))
-        aberration_title_lbl.pack(anchor="w", padx=5, pady=(5, 0))
-        
-        aberration_frame = ctk.CTkFrame(tab_color, border_width=2, border_color="#555555", corner_radius=6)
-        aberration_frame.pack(fill="x", pady=(0, 10))
-        
-        ctk.CTkLabel(aberration_frame, text="Red Shift (px):").grid(row=0, column=0, sticky="w", padx=10, pady=(10, 5))
-        self.var_red = tk.IntVar(value=0)
-        ctk.CTkEntry(aberration_frame, textvariable=self.var_red, width=60).grid(row=0, column=1, sticky="w", pady=(10, 5))
-        
-        ctk.CTkLabel(aberration_frame, text="Green Shift (px):").grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        self.var_green = tk.IntVar(value=0)
-        ctk.CTkEntry(aberration_frame, textvariable=self.var_green, width=60).grid(row=1, column=1, sticky="w", pady=5)
-        
-        ctk.CTkLabel(aberration_frame, text="Blue Shift (px):").grid(row=2, column=0, sticky="w", padx=10, pady=(5, 10))
-        self.var_blue = tk.IntVar(value=0)
-        ctk.CTkEntry(aberration_frame, textvariable=self.var_blue, width=60).grid(row=2, column=1, sticky="w", pady=(5, 10))
+        self.var_fixed_mode = tk.BooleanVar(value=False)
+        ctk.CTkCheckBox(displace_frame, text="Fix Position (Video)", variable=self.var_fixed_mode, checkbox_width=20, checkbox_height=20, corner_radius=6, border_width=2).grid(row=5, column=0, columnspan=3, sticky="w", padx=10, pady=(0, 10))
 
         # Warping
-        warp_title_lbl = ctk.CTkLabel(tab_color, text="Warping", font=ctk.CTkFont(weight="bold"))
+        warp_title_lbl = ctk.CTkLabel(tab_dist, text="Warping", font=ctk.CTkFont(weight="bold"))
         warp_title_lbl.pack(anchor="w", padx=5, pady=(5, 0))
         
-        warp_frame = ctk.CTkFrame(tab_color, border_width=2, border_color="#555555", corner_radius=6)
+        warp_frame = ctk.CTkFrame(tab_dist, border_width=2, border_color="#555555", corner_radius=6)
         warp_frame.pack(fill="x", pady=(0, 10))
         
         ctk.CTkLabel(warp_frame, text="Mode:").grid(row=0, column=0, sticky="w", padx=10, pady=(10, 5))
@@ -248,37 +292,45 @@ class databender:
         self.var_warp_val = tk.DoubleVar(value=0.0)
         ctk.CTkEntry(warp_frame, textvariable=self.var_warp_val, width=60).grid(row=1, column=1, sticky="w", pady=(5, 10))
 
-        # Swapping & Sorting container
-        bottom_color_container = ctk.CTkFrame(tab_color, fg_color="transparent")
-        bottom_color_container.pack(fill="x")
+        # ------------------------------------------
+        #              TAB 4: Artifacts
+        # ------------------------------------------
+        # Pixelation
+        pixelation_title_lbl = ctk.CTkLabel(tab_artif, text="Pixelation", font=ctk.CTkFont(weight="bold"))
+        pixelation_title_lbl.pack(anchor="w", padx=5, pady=(5, 0))
 
-        # Channel Swapping
-        swap_container = ctk.CTkFrame(bottom_color_container, fg_color="transparent")
-        swap_container.pack(side="left", fill="both", expand=True, padx=(0, 5))
-        
-        swap_title_lbl = ctk.CTkLabel(swap_container, text="Channel Swapping", font=ctk.CTkFont(weight="bold"))
-        swap_title_lbl.pack(anchor="w", padx=5, pady=(0, 2))
-        
-        swapping_frame = ctk.CTkFrame(swap_container, border_width=2, border_color="#555555", corner_radius=6)
-        swapping_frame.pack(fill="x")
-        
-        ctk.CTkLabel(swapping_frame, text="Mode:").grid(row=0, column=0, sticky="w", padx=10, pady=10)
-        self.var_channel_swapping_mode = tk.StringVar(value="none")
-        ctk.CTkComboBox(swapping_frame, variable=self.var_channel_swapping_mode, values=["none", "RBG", "GRB", "GBR", "BRG", "BGR"], state="readonly", width=100).grid(row=0, column=1, sticky="w", padx=5, pady=10)
+        pixel_frame = ctk.CTkFrame(tab_artif, border_width=2, border_color="#555555", corner_radius=6)
+        pixel_frame.pack(fill="x", pady=(0, 10))
 
-        # Pixel Sorting
-        sort_container = ctk.CTkFrame(bottom_color_container, fg_color="transparent")
-        sort_container.pack(side="right", fill="both", expand=True, padx=(5, 0))
-        
-        sort_title_lbl = ctk.CTkLabel(sort_container, text="Pixel Sorting", font=ctk.CTkFont(weight="bold"))
+        pixel_frame.columnconfigure(1, weight=1)
+
+        ctk.CTkLabel(pixel_frame, text="Pixelation amount:").grid(row=0, column=0, sticky="e", padx=10, pady=10)
+        self.var_pixelation_amount = tk.IntVar(value=0)
+        ctk.CTkSlider(pixel_frame, from_=0, to=100, variable=self.var_pixelation_amount, command=lambda v: self.var_pixelation_amount.set(int(float(v)))).grid(row=0, column=1, sticky="ew", padx=10)
+        ctk.CTkEntry(pixel_frame, textvariable=self.var_pixelation_amount, width=50).grid(row=0, column=2, sticky="w", padx=10)
+
+        # Pixel Sorting        
+        sort_title_lbl = ctk.CTkLabel(tab_artif, text="Pixel Sorting", font=ctk.CTkFont(weight="bold"))
         sort_title_lbl.pack(anchor="w", padx=5, pady=(0, 2))
         
-        sorting_frame = ctk.CTkFrame(sort_container, border_width=2, border_color="#555555", corner_radius=6)
+        sorting_frame = ctk.CTkFrame(tab_artif, border_width=2, border_color="#555555", corner_radius=6)
         sorting_frame.pack(fill="x")
         
         ctk.CTkLabel(sorting_frame, text="Mode:").grid(row=0, column=0, sticky="w", padx=10, pady=10)
         self.var_sort_mode = tk.StringVar(value="none")
         ctk.CTkComboBox(sorting_frame, variable=self.var_sort_mode, values=["none", "lum", "hue"], state="readonly", width=100).grid(row=0, column=1, sticky="w", padx=5, pady=10)
+
+        # JPEG Compression
+        compression_title_lbl = sort_title_lbl = ctk.CTkLabel(tab_artif, text="JPEG Compression", font=ctk.CTkFont(weight="bold"))
+        compression_title_lbl.pack(anchor="w", padx=5, pady=(10, 2))
+
+        compression_frame = ctk.CTkFrame(tab_artif, border_width=2, border_color="#555555", corner_radius=6)
+        compression_frame.pack(fill="x")
+
+        ctk.CTkLabel(compression_frame, text="Value:").grid(row=0, column=0, sticky="e", padx=10, pady=10)
+        self.var_jpeg_compression_amount = tk.IntVar(value=0)
+        ctk.CTkSlider(compression_frame, from_=0, to=100, variable=self.var_jpeg_compression_amount, command=lambda v: self.var_jpeg_compression_amount.set(int(float(v)))).grid(row=0, column=1, sticky="ew", padx=10)
+        ctk.CTkEntry(compression_frame, textvariable=self.var_jpeg_compression_amount, width=50).grid(row=0, column=2, sticky="w", padx=10)
 
     def start_update_check(self):
         self.btn_update.configure(state="disabled", text="Checking...")
@@ -446,6 +498,9 @@ class databender:
             "roi_w": roi_w,
             "roi_h": roi_h,
 
+            "h_flip": self.var_do_h_flip.get(),
+            "v_flip": self.var_do_v_flip.get(),
+
             "color_offset": self.var_color_offset.get(),
 
             "do_shift": self.var_do_shift.get(),
@@ -463,11 +518,18 @@ class databender:
             "warp_mode": self.var_warp_mode.get(),
             "warp_val": self.var_warp_val.get(),
 
+            "do_blocks": self.var_do_blocks.get(),
             "num_blocks": self.var_num_blocks.get(),
             "min_block_size": self.var_min_block_size.get(), 
             "max_block_size": self.var_max_block_size.get(),
             "shift_amount": self.var_shift_amount.get(),
-            "fixed_mode":self.var_fixed_mode.get()
+            "fixed_mode":self.var_fixed_mode.get(),
+
+            "pixelation_amount": self.var_pixelation_amount.get(),
+
+            "xor_glitch_value": self.var_xor_glitch_value.get(),
+
+            "compression_amount": self.var_jpeg_compression_amount.get()
         }
 
         ext = os.path.splitext(self.image_path)[1].lower()
