@@ -42,15 +42,17 @@ python databender_cli.py
 ```
 
 ## Features and effects (for now)
-- **Region of Interest (ROI) mask:** Define a specific rectangular area by providing X, Y, width and height values to glitch only a targeted part of the image/video.
-
-- **Color Manipulation:** Adds a fixed integer value to all color channels (Red, Green, Blue).
-- **Row Shifting:** Horizontally displaces rows of pixels by a random amount.
-- **Chromatic Aberration:** Independent horizontal displacement of the Red, Green, and Blue color channels.
-- **Pixel Sorting (lum / hue):** Reorders pixels within specific intervals based on their mathematical properties.
-- **Warping (normal / sin):** Distorts the geometry of the image/video by shifting rows based on mathematical functions.
-- **Block Displacement:** Simulates digital corruption by randomly shifting rectangular image segments across the frame.
-- **Channel Swapping:** Enables the reordering of the Red, Green, and Blue color channels in all possible combinations to create surreal looks.
+* **Region of Interest (ROI) mask:** Define a specific rectangular area by providing X, Y, width and height values to glitch only a targeted part of the image/video.
+* **Color Manipulation:** Adds a fixed integer value to all color channels (Red, Green, Blue).
+* **Channel Swapping:** Enables the reordering of the Red, Green, and Blue color channels in all possible combinations to create surreal looks.
+* **Chromatic Aberration:** Independent horizontal displacement of the Red, Green, and Blue color channels.
+* **XOR Glitch:** Applies a bitwise XOR mathematical operation to the pixel data, corrupting and wrapping color values to generate harsh, high-contrast colors.
+* **Row Shifting:** Horizontally displaces rows of pixels by a random amount.
+* **Warping (normal / sin):** Distorts the geometry of the image/video by shifting rows based on mathematical functions.
+* **Block Displacement:** Simulates digital corruption by randomly shifting rectangular image segments across the frame.
+* **Pixel Sorting (lum / hue):** Reorders pixels within specific intervals based on their mathematical properties.
+* **Pixelation:** Reduces the image resolution by scaling it down and back up without smoothing, resulting in large, blocky pixels.
+* **JPEG Compression Glitch:** Degrades the image by forcing it through a low-quality JPEG compression algorithm in memory, simulating heavy digital artifacts, color banding, and macroblocking.
 
 ## Example images
 
